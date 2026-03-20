@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
+import Landing from './pages/Landing';
 import * as authService from './services/authService';
 import ProtectedRoute from './components/ProtectedRoute';
 import {
@@ -25,7 +26,7 @@ function App() {
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<AdminLogin />} />
+        <Route path="/" element={<Landing />} />
         <Route path="/invite/:guestSlug" element={<Home />} />
 
         {/* Admin Login */}
