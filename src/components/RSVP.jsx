@@ -1,0 +1,224 @@
+import { useState } from 'react';
+import { useScrollReveal } from '../hooks/useScrollReveal';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8787';
+
+const RSVP = () => {
+  useScrollReveal();
+
+  const [formData, setFormData] = useState({
+    name: '',
+    pax: 1,
+    attendance: 'yes',
+    message: ''
+  });
+  const [status, setStatus] = useState('idle'); // idle, loading, success, error
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name.trim()) {
+      setErrorMessage('Please enter your name');
+      setStatus('error');
+      return;
+    }
+
+    setStatus('loading');
+    setErrorMessage('');
+
+    try {
+      // Prepare the RSVP request
+      const rsvpPromise = fetch(`${API_BASE_URL}/api/rsvp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          pax: parseInt(formData.pax, 10) || 1
+        }),
+      });
+
+      // Prepare the Wishes request if message is not empty
+      let wishesPromise = Promise.resolve({ ok: true });
+      if (formData.message.trim()) {
+        wishesPromise = fetch(`${API_BASE_URL}/api/wishes`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            name: formData.name,
+            message: formData.message
+          }),
+        });
+      }
+
+      // Execute both requests concurrently
+      const [rsvpResponse, wishesResponse] = await Promise.all([rsvpPromise, wishesPromise]);
+
+      if (!rsvpResponse.ok) {
+        const data = await rsvpResponse.json();
+        throw new Error(data.error || 'Failed to submit RSVP');
+      }
+
+      if (!wishesResponse.ok) {
+        const data = await wishesResponse.json();
+        throw new Error(data.error || 'Failed to submit your message');
+      }
+
+      setStatus('success');
+      setFormData({ name: '', pax: 1, attendance: 'yes', message: '' });
+    } catch (error) {
+      console.error('Submission Error:', error);
+      setErrorMessage(error.message || 'An unexpected error occurred. Please try again.');
+      setStatus('error');
+    }
+  };
+
+  return (
+    <section className="py-24 bg-offwhite text-charcoal flex flex-col items-center justify-center min-h-[80vh] px-4">
+      <div
+        className="max-w-[440px] w-full bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-8 md:p-12 relative overflow-hidden obs-hide obs-up"
+        style={{ animationDelay: '100ms' }}
+      >
+        {/* Subtle decorative accent */}
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-gold/40 via-maroon to-gold/40"></div>
+
+        <div className="text-center mb-10">
+          <svg className="w-8 h-8 text-gold mx-auto mb-4 opacity-80" viewBox="0 0 100 100" fill="none" stroke="currentColor" strokeWidth="1">
+            <circle cx="50" cy="50" r="45"></circle><circle cx="50" cy="50" r="35"></circle>
+            <path d="M50 5 L50 15 M50 85 L50 95 M5 50 L15 50 M85 50 L95 50 M18 18 L25 25 M75 75 L82 82 M18 82 L25 75 M75 25 L82 18"></path>
+          </svg>
+          <h2 className="font-serif text-3xl md:text-4xl text-maroon mb-2 italic">RSVP & Wishes</h2>
+          <p className="text-gray-400 font-light text-sm tracking-wide">We would love to hear from you</p>
+        </div>
+
+        {status === 'success' ? (
+          <div className="py-6 text-center animate-fade-in relative z-10">
+            <div className="w-20 h-20 rounded-full bg-maroon/5 text-maroon mx-auto flex items-center justify-center mb-6">
+              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-serif text-maroon mb-3 italic">Thank you!</h3>
+            <p className="text-gray-500 font-light text-sm leading-relaxed mb-8">
+              Your response and message have been wonderfully received.
+            </p>
+            <button
+              onClick={() => setStatus('idle')}
+              className="px-8 py-3 bg-white border border-gray-200 text-gray-500 text-xs font-semibold tracking-widest uppercase hover:bg-gray-50 hover:text-maroon transition-all rounded-full cursor-pointer"
+            >
+              Send Another
+            </button>
+          </div>
+        ) : (
+          <form className="space-y-6 relative z-10" onSubmit={handleSubmit}>
+            {status === 'error' && (
+              <div className="p-4 rounded-xl border border-red-100 bg-red-50 text-red-600 text-sm font-light text-center animate-fade-in">
+                {errorMessage}
+              </div>
+            )}
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest pl-1">Name</label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                required
+                placeholder="How should we address you?"
+                className="w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-sm font-light text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon/30 focus:bg-white transition-all"
+                disabled={status === 'loading'}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest pl-1">Number of Guests</label>
+              <input
+                type="number"
+                name="pax"
+                min="1"
+                max="4"
+                value={formData.pax}
+                onChange={handleChange}
+                required
+                placeholder="Including yourself"
+                className="w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-sm font-light text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon/30 focus:bg-white transition-all"
+                disabled={status === 'loading'}
+              />
+            </div>
+
+            <div className="space-y-2.5 pt-1">
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest pl-1 text-center">Will you attend?</label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { value: 'yes', label: 'Yes' },
+                  { value: 'maybe', label: 'Maybe' },
+                  { value: 'no', label: 'No' }
+                ].map(({ value, label }) => (
+                  <label key={value} className="relative cursor-pointer group">
+                    <input
+                      type="radio"
+                      name="attendance"
+                      value={value}
+                      checked={formData.attendance === value}
+                      onChange={handleChange}
+                      className="peer sr-only"
+                      disabled={status === 'loading'}
+                    />
+                    <div className="text-center py-3 border border-gray-100 bg-gray-50/50 rounded-xl text-xs font-medium text-gray-500 peer-checked:bg-maroon peer-checked:border-maroon peer-checked:text-gold peer-checked:shadow-md transition-all duration-300 hover:border-maroon/30 group-hover:bg-gray-50">
+                      {label}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest pl-1">Message (Optional)</label>
+              <textarea
+                name="message"
+                value={formData.message}
+                onChange={handleChange}
+                rows="3"
+                placeholder="Leave a wish for the couple..."
+                className="w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-sm font-light text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon/30 focus:bg-white transition-all resize-none"
+                disabled={status === 'loading'}
+              ></textarea>
+            </div>
+
+            <div className="pt-4">
+              <button
+                type="submit"
+                disabled={status === 'loading'}
+                className={`w-full py-4 bg-maroon text-gold text-xs font-semibold uppercase tracking-widest rounded-2xl transition-all duration-500 ${status === 'loading'
+                    ? 'opacity-70 cursor-not-allowed transform scale-95'
+                    : 'hover:bg-maroon/90 hover:shadow-lg hover:-translate-y-0.5 cursor-pointer'
+                  }`}
+              >
+                {status === 'loading' ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <svg className="animate-spin h-4 w-4 text-gold" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </span>
+                ) : 'Send Reply'}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </section>
+  );
+};
+
+export default RSVP;

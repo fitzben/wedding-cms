@@ -1,0 +1,137 @@
+import { Icon } from '@iconify/react';
+import { useState, useEffect } from 'react';
+
+const Hero = ({ guestName, onOpenInvitation }) => {
+  const [isOpened, setIsOpened] = useState(false);
+  const [isRemoving, setIsRemoving] = useState(false);
+  const [showChevron, setShowChevron] = useState(true);
+
+  const handleOpenClick = () => {
+    setIsOpened(true);
+    onOpenInvitation();
+
+    // The hero exits with a scale/fade animation over 600ms
+    setTimeout(() => {
+      // Physically remove it from the DOM after animation completes
+      setIsRemoving(true);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }, 600);
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Hide chevron if scrolled past 50% of viewport
+      if (window.scrollY > window.innerHeight * 0.5) {
+        setShowChevron(false);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  if (isRemoving) return null;
+
+  return (
+    <header
+      id="hero-section"
+      className={`relative min-h-screen flex flex-col items-center justify-between overflow-hidden bg-black py-20 w-full transition-all duration-600 ${
+        isOpened ? 'opacity-0 scale-[1.04]' : 'opacity-100 scale-100'
+      }`}
+      style={{ transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)' }}
+      aria-hidden={isOpened ? 'true' : 'false'}
+    >
+      <div className="absolute inset-0 w-full h-full">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A1A] via-[#4a0611] to-[#1A1A1A] scale-105 transition-transform duration-[20000ms] ease-out hover:scale-110"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-maroon/40 via-transparent to-transparent opacity-80 mix-blend-screen"></div>
+        <div className="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-gold/20 via-transparent to-transparent opacity-60 mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-black/40"></div>
+      </div>
+
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 w-full flex-grow mt-12">
+        <p className="uppercase text-[11px] font-light text-ivory tracking-[0.3em] mb-12 opacity-70 hero-elem anim-hero-label">
+          The Wedding Of
+        </p>
+
+        {/* STACKED NAMES WITH GHOST & */}
+        <div className="relative flex flex-col items-center justify-center z-10 w-full mb-8">
+          {/* Ghost "&" Watermark */}
+          <span
+            className="absolute top-1/2 left-1/2 font-serif italic text-[clamp(200px,30vw,400px)] text-gold/[0.06] pointer-events-none select-none z-0 hero-elem anim-hero-ghost"
+            style={{ lineHeight: 1 }}
+          >
+            &amp;
+          </span>
+
+          {/* Benjamin */}
+          <span className="font-script text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name1">
+            Benjamin
+          </span>
+
+          {/* Thin Makassar Rule */}
+          <svg
+            className="w-[160px] h-[8px] my-4 z-10 hero-elem anim-hero-rule"
+            viewBox="0 0 160 8"
+            fill="none"
+            stroke="#C9A84C"
+            strokeWidth="1"
+          >
+            <line x1="0" y1="4" x2="72" y2="4"></line>
+            <circle cx="80" cy="4" r="3" fill="#C9A84C"></circle>
+            <line x1="88" y1="4" x2="160" y2="4"></line>
+          </svg>
+
+          {/* Angelin */}
+          <span className="font-script text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name2">
+            Angelin
+          </span>
+        </div>
+
+        <p className="text-offwhite text-xs uppercase tracking-[0.3em] mt-8 hero-elem anim-hero-date">
+          Sunday &middot; 31 May 2026
+        </p>
+      </div>
+
+      <div className="flex flex-col w-full z-10 pt-16 px-6 relative items-center">
+        <div className="hero-elem anim-hero-guest flex flex-col items-center">
+          <p className="text-offwhite/80 text-sm mb-2 font-light italic font-serif">
+            Dear,
+          </p>
+          <p className="text-2xl font-serif tracking-tight mb-10 font-normal text-white capitalize">
+            {guestName || 'Guest Name'}
+          </p>
+        </div>
+
+        <button
+          onClick={handleOpenClick}
+          className="group relative inline-flex items-center justify-center gap-4 px-8 py-4 border border-maroon text-offwhite rounded-full overflow-hidden transition-all duration-700 hover:bg-maroon hero-elem anim-hero-btn bg-transparent cursor-pointer"
+        >
+          <span className="relative z-10 text-xs tracking-[0.2em] uppercase font-light">
+            Open Invitation
+          </span>
+          <Icon
+            icon="solar:lock-keyhole-linear"
+            className="relative z-10 text-lg transition-transform duration-500 group-hover:scale-110"
+            style={{ strokeWidth: 1.5 }}
+          />
+        </button>
+      </div>
+
+      {/* Scroll Chevron */}
+      <div
+        id="hero-chevron"
+        className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-10 anim-chevron pointer-events-none transition-opacity duration-400 ${
+          showChevron ? 'opacity-100' : 'opacity-0'
+        }`}
+      >
+        <Icon
+          icon="solar:alt-arrow-down-linear"
+          className="text-3xl text-gold"
+          style={{ strokeWidth: 1.5 }}
+        />
+      </div>
+    </header>
+  );
+};
+
+export default Hero;
