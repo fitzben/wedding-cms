@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8787";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const MIN_LOADING_MS = 1500;
 
 export default function useGuest(slug) {
