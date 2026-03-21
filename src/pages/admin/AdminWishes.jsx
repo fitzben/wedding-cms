@@ -38,7 +38,7 @@ export const AdminWishes = () => {
   };
 
   return (
-    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-10">
+    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-10">
       <div className="mb-8">
         <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">Wishes</h1>
         <p className="text-gray-500">Read and manage beautiful messages from your loved ones.</p>

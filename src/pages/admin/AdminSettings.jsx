@@ -199,6 +199,28 @@ function TabWedding({ settings, onChange, onSave, saving }) {
         </div>
       </SectionCard>
 
+      {/* Social & Family */}
+      <SectionCard title="Social & Family" description="Instagram handles and parental information">
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-bold text-rose-500 uppercase tracking-[0.2em]">Bride's Side</h4>
+              <div><Label optional>Instagram Handle</Label><Input placeholder="@username" {...f('bride_instagram')} /></div>
+              <div><Label>Father's Name</Label><Input placeholder="Full Name" {...f('bride_father')} /></div>
+              <div><Label>Mother's Name</Label><Input placeholder="Full Name" {...f('bride_mother')} /></div>
+              <div><Label>Child Position</Label><Input placeholder="e.g. Putri Pertama" {...f('bride_child_order')} /></div>
+            </div>
+            <div className="space-y-4">
+              <h4 className="text-[10px] font-bold text-blue-500 uppercase tracking-[0.2em]">Groom's Side</h4>
+              <div><Label optional>Instagram Handle</Label><Input placeholder="@username" {...f('groom_instagram')} /></div>
+              <div><Label>Father's Name</Label><Input placeholder="Full Name" {...f('groom_father')} /></div>
+              <div><Label>Mother's Name</Label><Input placeholder="Full Name" {...f('groom_mother')} /></div>
+              <div><Label>Child Position</Label><Input placeholder="e.g. Putra Kedua" {...f('groom_child_order')} /></div>
+            </div>
+          </div>
+        </div>
+      </SectionCard>
+
       {/* Holy Matrimony */}
       <SectionCard title="Holy Matrimony" description="Church / religious ceremony details">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+import { getWishes } from '../services/wishService';
+import { useSettings } from '../contexts/SettingsContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const RSVP = () => {
   useScrollReveal();
+  const { settings } = useSettings();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -14,6 +17,23 @@ const RSVP = () => {
   });
   const [status, setStatus] = useState('idle'); // idle, loading, success, error
   const [errorMessage, setErrorMessage] = useState('');
+  const [wishes, setWishes] = useState([]);
+  const [wishesLoading, setWishesLoading] = useState(true);
+
+  const fetchWishes = async () => {
+    try {
+      const data = await getWishes();
+      setWishes(data || []);
+    } catch (err) {
+      console.error('Error loading wishes:', err);
+    } finally {
+      setWishesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchWishes();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -74,6 +94,8 @@ const RSVP = () => {
 
       setStatus('success');
       setFormData({ name: '', pax: 1, attendance: 'yes', message: '' });
+      // Refresh wishes list
+      fetchWishes();
     } catch (error) {
       console.error('Submission Error:', error);
       setErrorMessage(error.message || 'An unexpected error occurred. Please try again.');
@@ -82,7 +104,7 @@ const RSVP = () => {
   };
 
   return (
-    <section className="py-24 bg-offwhite text-charcoal flex flex-col items-center justify-center min-h-[80vh] px-4">
+    <section id="section-rsvp" className="py-24 bg-offwhite text-charcoal flex flex-col items-center justify-center min-h-[80vh] px-4 space-y-16">
       <div
         className="max-w-[440px] w-full bg-white rounded-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.05)] p-8 md:p-12 relative overflow-hidden obs-hide obs-up"
         style={{ animationDelay: '100ms' }}
@@ -216,6 +238,35 @@ const RSVP = () => {
             </div>
           </form>
         )}
+      </div>
+
+      {/* Wishes Feed */}
+      <div className="max-w-[600px] w-full obs-hide obs-up" style={{ animationDelay: '300ms' }}>
+        <h3 className="font-serif text-2xl text-maroon mb-8 italic text-center">Wedding Wishes</h3>
+        
+        <div className="bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-100 p-6 max-h-[500px] overflow-y-auto space-y-4 custom-scrollbar">
+          {wishesLoading ? (
+            <div className="text-center py-10 text-gray-400 font-light italic">Loading wishes...</div>
+          ) : wishes.length > 0 ? (
+            wishes.map((wish, idx) => (
+              <div key={wish.id || idx} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-serif text-maroon italic text-lg">{wish.name}</h4>
+                  <span className="text-[10px] text-gray-300 uppercase tracking-widest">
+                    {wish.created_at ? new Date(wish.created_at).toLocaleDateString() : ''}
+                  </span>
+                </div>
+                <p className="text-gray-500 font-light text-sm leading-relaxed whitespace-pre-line lowercase italic">
+                  "{wish.message}"
+                </p>
+              </div>
+            ))
+          ) : (
+            <div className="text-center py-10 text-gray-400 font-light italic">
+              No wishes yet. Be the first to send one!
+            </div>
+          )}
+        </div>
       </div>
     </section>
   );

@@ -1,8 +1,14 @@
 import { useEffect } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
+import { useSettings } from '../contexts/SettingsContext';
 
 const Hashtag = ({ isVisible }) => {
   useScrollReveal();
+  const { settings } = useSettings();
+
+  const groomNickname = settings?.groom_nickname || 'Benjamin';
+  const brideNickname = settings?.bride_nickname || 'Angelin';
+  const weddingDate = settings?.resepsi_date || '31 · 05 · 2026';
 
   useEffect(() => {
     // Only spawn particles when the section becomes visible
@@ -156,7 +162,7 @@ const Hashtag = ({ isVisible }) => {
             textShadow: '0 4px 60px rgba(201,168,76,0.2)'
           }}
         >
-          Benjamin &amp; Angelin
+          {groomNickname} &amp; {brideNickname}
         </h1>
 
         <svg
@@ -200,7 +206,7 @@ const Hashtag = ({ isVisible }) => {
           className="font-sans font-light text-[11px] text-ivory/55 tracking-[0.35em] uppercase opacity-0 mb-12"
           style={{ transition: 'opacity 0.8s ease', transform: 'translateY(10px)' }}
         >
-          #BengothisAngel &nbsp;&middot;&nbsp; 31 &middot; 05 &middot; 2026
+          #BengothisAngel &nbsp;&middot;&nbsp; {weddingDate}
         </p>
 
         {/* Scroll hint */}

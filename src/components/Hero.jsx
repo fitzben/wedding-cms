@@ -1,7 +1,9 @@
-import { Icon } from '@iconify/react';
 import { useState, useEffect } from 'react';
+import { Icon } from '@iconify/react';
+import { useSettings } from '../contexts/SettingsContext';
 
 const Hero = ({ guestName, onOpenInvitation }) => {
+  const { settings } = useSettings();
   const [isOpened, setIsOpened] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [showChevron, setShowChevron] = useState(true);
@@ -25,19 +27,22 @@ const Hero = ({ guestName, onOpenInvitation }) => {
         setShowChevron(false);
       }
     };
-    
+
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   if (isRemoving) return null;
 
+  const groomName = settings?.groom_nickname;
+  const brideName = settings?.bride_nickname;
+  const weddingDate = settings?.resepsi_date;
+
   return (
     <header
       id="hero-section"
-      className={`relative min-h-screen flex flex-col items-center justify-between overflow-hidden bg-black py-20 w-full transition-all duration-600 ${
-        isOpened ? 'opacity-0 scale-[1.04]' : 'opacity-100 scale-100'
-      }`}
+      className={`relative min-h-screen flex flex-col items-center justify-between overflow-hidden bg-black py-20 w-full transition-all duration-600 ${isOpened ? 'opacity-0 scale-[1.04]' : 'opacity-100 scale-100'
+        }`}
       style={{ transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)' }}
       aria-hidden={isOpened ? 'true' : 'false'}
     >
@@ -65,7 +70,7 @@ const Hero = ({ guestName, onOpenInvitation }) => {
 
           {/* Benjamin */}
           <span className="font-script text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name1">
-            Benjamin
+            {groomName}
           </span>
 
           {/* Thin Makassar Rule */}
@@ -83,12 +88,12 @@ const Hero = ({ guestName, onOpenInvitation }) => {
 
           {/* Angelin */}
           <span className="font-script text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name2">
-            Angelin
+            {brideName}
           </span>
         </div>
 
         <p className="text-offwhite text-xs uppercase tracking-[0.3em] mt-8 hero-elem anim-hero-date">
-          Sunday &middot; 31 May 2026
+          Sunday &middot; {weddingDate}
         </p>
       </div>
 
@@ -120,9 +125,8 @@ const Hero = ({ guestName, onOpenInvitation }) => {
       {/* Scroll Chevron */}
       <div
         id="hero-chevron"
-        className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-10 anim-chevron pointer-events-none transition-opacity duration-400 ${
-          showChevron ? 'opacity-100' : 'opacity-0'
-        }`}
+        className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-10 anim-chevron pointer-events-none transition-opacity duration-400 ${showChevron ? 'opacity-100' : 'opacity-0'
+          }`}
       >
         <Icon
           icon="solar:alt-arrow-down-linear"
