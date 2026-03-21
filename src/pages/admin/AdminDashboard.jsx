@@ -25,7 +25,7 @@ function timeAgo(dateStr) {
   const m = Math.floor(diff / 60000);
   const h = Math.floor(diff / 3600000);
   const d = Math.floor(diff / 86400000);
-  if (m < 1)  return 'just now';
+  if (m < 1) return 'just now';
   if (m < 60) return `${m}m ago`;
   if (h < 24) return `${h}h ago`;
   return `${d}d ago`;
@@ -47,11 +47,11 @@ function useCountdown(targetDate) {
       const diff = target - Date.now();
       if (diff <= 0) return setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, passed: true });
       setTimeLeft({
-        days:    Math.floor(diff / 86400000),
-        hours:   Math.floor((diff % 86400000) / 3600000),
-        minutes: Math.floor((diff % 3600000)  / 60000),
-        seconds: Math.floor((diff % 60000)    / 1000),
-        passed:  false,
+        days: Math.floor(diff / 86400000),
+        hours: Math.floor((diff % 86400000) / 3600000),
+        minutes: Math.floor((diff % 3600000) / 60000),
+        seconds: Math.floor((diff % 60000) / 1000),
+        passed: false,
       });
     };
     calc();
@@ -70,8 +70,8 @@ function StatCard({ label, value, sub, icon, color, loading }) {
         <span className="text-2xl">{icon}</span>
         {loading && (
           <svg className="animate-spin w-4 h-4 opacity-40" fill="none" viewBox="0 0 24 24">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
           </svg>
         )}
       </div>
@@ -106,7 +106,7 @@ function CountdownCard({ settings, loading }) {
 
       {loading ? (
         <div className="flex gap-3">
-          {['D','H','M','S'].map(u => (
+          {['D', 'H', 'M', 'S'].map(u => (
             <div key={u} className="flex-1 bg-gray-800 rounded-xl p-3 text-center">
               <div className="text-xl font-bold animate-pulse">--</div>
               <div className="text-[10px] text-gray-500 mt-0.5">{u}</div>
@@ -120,8 +120,8 @@ function CountdownCard({ settings, loading }) {
       ) : timeLeft ? (
         <div className="flex gap-2">
           {[
-            { v: timeLeft.days,    u: 'DAYS' },
-            { v: timeLeft.hours,   u: 'HRS' },
+            { v: timeLeft.days, u: 'DAYS' },
+            { v: timeLeft.hours, u: 'HRS' },
             { v: timeLeft.minutes, u: 'MIN' },
             { v: timeLeft.seconds, u: 'SEC' },
           ].map(({ v, u }) => (
@@ -143,9 +143,9 @@ function RSVPBreakdown({ rsvp, loading }) {
   const attendPct = total ? Math.round((attending / total) * 100) : 0;
 
   const bars = [
-    { label: 'Hadir',        count: attending,     pct: total ? (attending     / total) * 100 : 0, color: 'bg-emerald-500' },
-    { label: 'Tidak Hadir',  count: not_attending, pct: total ? (not_attending / total) * 100 : 0, color: 'bg-red-400' },
-    { label: 'Mungkin',      count: maybe,         pct: total ? (maybe         / total) * 100 : 0, color: 'bg-amber-400' },
+    { label: 'Hadir', count: attending, pct: total ? (attending / total) * 100 : 0, color: 'bg-emerald-500' },
+    { label: 'Tidak Hadir', count: not_attending, pct: total ? (not_attending / total) * 100 : 0, color: 'bg-red-400' },
+    { label: 'Mungkin', count: maybe, pct: total ? (maybe / total) * 100 : 0, color: 'bg-amber-400' },
   ];
 
   return (
@@ -165,7 +165,7 @@ function RSVPBreakdown({ rsvp, loading }) {
 
       {loading ? (
         <div className="space-y-3">
-          {[1,2,3].map(i => <div key={i} className="h-8 bg-gray-100 rounded-xl animate-pulse" />)}
+          {[1, 2, 3].map(i => <div key={i} className="h-8 bg-gray-100 rounded-xl animate-pulse" />)}
         </div>
       ) : total === 0 ? (
         <div className="text-sm text-gray-400 text-center py-4">Belum ada RSVP</div>
@@ -211,7 +211,7 @@ function GuestBreakdown({ guests, loading }) {
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
       <h3 className="font-bold text-gray-900 mb-5">Guest Breakdown</h3>
       {loading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-8 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-8 bg-gray-100 rounded-xl animate-pulse" />)}</div>
       ) : (
         <div className="space-y-5">
           {/* By Category */}
@@ -272,7 +272,7 @@ function RecentWishes({ wishes, loading }) {
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-14 bg-gray-100 rounded-xl animate-pulse" />)}</div>
       ) : !wishes?.length ? (
         <div className="text-sm text-gray-400 text-center py-4">Belum ada ucapan</div>
       ) : (
@@ -316,7 +316,7 @@ function RecentGifts({ gifts, giftSummary, loading }) {
       </div>
 
       {loading ? (
-        <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />)}</div>
+        <div className="space-y-3">{[1, 2, 3].map(i => <div key={i} className="h-12 bg-gray-100 rounded-xl animate-pulse" />)}</div>
       ) : !gifts?.length ? (
         <div className="text-sm text-gray-400 text-center py-4">Belum ada gift tercatat</div>
       ) : (
@@ -335,9 +335,8 @@ function RecentGifts({ gifts, giftSummary, loading }) {
                   ? <div className="text-xs font-bold text-gray-900">{formatIDR(g.amount)}</div>
                   : <div className="text-xs font-semibold text-gray-700 max-w-[80px] truncate">{g.product_name}</div>
                 }
-                <div className={`text-[10px] font-semibold mt-0.5 ${
-                  g.status === 'confirmed' ? 'text-emerald-600' : g.status === 'rejected' ? 'text-red-500' : 'text-amber-500'
-                }`}>{g.status}</div>
+                <div className={`text-[10px] font-semibold mt-0.5 ${g.status === 'confirmed' ? 'text-emerald-600' : g.status === 'rejected' ? 'text-red-500' : 'text-amber-500'
+                  }`}>{g.status}</div>
               </div>
             </div>
           ))}
@@ -350,10 +349,10 @@ function RecentGifts({ gifts, giftSummary, loading }) {
 // ─── Feature Status ───────────────────────────────────────────────────────────
 function FeatureStatus({ settings, loading }) {
   const features = [
-    { key: 'rsvp_enabled',        label: 'RSVP',              icon: '📋' },
-    { key: 'wishes_enabled',      label: 'Ucapan & Doa',      icon: '💌' },
-    { key: 'gift_enabled',        label: 'Amplop Digital',    icon: '🎁' },
-    { key: 'maintenance_mode',    label: 'Maintenance Mode',  icon: '🔧', inverted: true },
+    { key: 'rsvp_enabled', label: 'RSVP', icon: '📋' },
+    { key: 'wishes_enabled', label: 'Ucapan & Doa', icon: '💌' },
+    { key: 'gift_enabled', label: 'Amplop Digital', icon: '🎁' },
+    { key: 'maintenance_mode', label: 'Maintenance Mode', icon: '🔧', inverted: true },
   ];
 
   return (
@@ -391,8 +390,8 @@ function FeatureStatus({ settings, loading }) {
 
 // ─── Wedding Info Banner ──────────────────────────────────────────────────────
 function WeddingBanner({ settings, loading }) {
-  const bride   = settings?.bride_nickname   || settings?.bride_name   || '—';
-  const groom   = settings?.groom_nickname   || settings?.groom_name   || '—';
+  const bride = settings?.bride_nickname || settings?.bride_name || '—';
+  const groom = settings?.groom_nickname || settings?.groom_name || '—';
   const dateRes = settings?.resepsi_date;
   const venueRes = settings?.resepsi_venue_name;
 
@@ -404,7 +403,7 @@ function WeddingBanner({ settings, loading }) {
 
   return (
     <div className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white rounded-2xl px-7 py-5 mb-6 flex items-center justify-between gap-4 overflow-hidden relative">
-      <div className="absolute inset-0 opacity-5" style={{backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px'}} />
+      <div className="absolute inset-0 opacity-5" style={{ backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 20%, white 1px, transparent 1px)', backgroundSize: '60px 60px' }} />
       <div className="relative">
         <div className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">The Wedding of</div>
         <div className="text-2xl font-bold">{bride} <span className="text-gray-400 font-light">&</span> {groom}</div>
@@ -421,9 +420,9 @@ function WeddingBanner({ settings, loading }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export const AdminDashboard = () => {
-  const [data, setData]       = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError]     = useState('');
+  const [error, setError] = useState('');
   const [lastRefresh, setLastRefresh] = useState(null);
 
   const load = useCallback(async () => {
@@ -440,18 +439,16 @@ export const AdminDashboard = () => {
     }
   }, []);
 
-  useEffect(() => { load(); }, [load]);
-
-  // Auto-refresh every 60 seconds
   useEffect(() => {
-    const t = setInterval(() => load(), 60000);
+    load();
+    const t = setInterval(load, 60000);
     return () => clearInterval(t);
-  }, [load]);
+  }, []);
 
   const s = data?.settings || {};
-  const g = data?.guests   || {};
-  const r = data?.rsvp     || {};
-  const gf = data?.gifts   || {};
+  const g = data?.guests || {};
+  const r = data?.rsvp || {};
+  const gf = data?.gifts || {};
 
   const statCards = [
     {
@@ -533,24 +530,24 @@ export const AdminDashboard = () => {
       <WeddingBanner settings={s} loading={loading} />
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {statCards.map(c => <StatCard key={c.label} {...c} loading={loading} />)}
       </div>
 
       {/* Countdown + Feature Status */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <CountdownCard settings={s} loading={loading} />
         <FeatureStatus settings={s} loading={loading} />
       </div>
 
       {/* RSVP + Guest Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RSVPBreakdown rsvp={r} loading={loading} />
         <GuestBreakdown guests={g} loading={loading} />
       </div>
 
       {/* Recent Wishes + Recent Gifts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <RecentWishes wishes={data?.recent_wishes} loading={loading} />
         <RecentGifts gifts={data?.recent_gifts} giftSummary={gf} loading={loading} />
       </div>

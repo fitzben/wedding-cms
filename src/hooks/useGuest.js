@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { apiCache } from "../services/apiCache";
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const MIN_LOADING_MS = 1500;
@@ -37,10 +38,19 @@ export default function useGuest(slug) {
       }
     }
 
-    fetch(`${BASE_URL}/api/guests/slug/${slug}`)
-      .then((res) => res.json())
+    const networkFetch = () => {
+      return apiCache.fetch(cacheKey, () => {
+        return fetch(`${BASE_URL}/api/guests/slug/${slug}`)
+          .then((res) => res.json())
+          .then((data) => {
+            localStorage.setItem(cacheKey, JSON.stringify(data));
+            return data;
+          });
+      });
+    };
+
+    networkFetch()
       .then((data) => {
-        localStorage.setItem(cacheKey, JSON.stringify(data));
         finish(data);
       })
       .catch(() => {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as authService from '../../services/authService';
+import { apiCache } from '../../services/apiCache';
 
 // ─── API helpers ────────────────────────────────────────────────────────────
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
@@ -21,7 +22,9 @@ const API = {
       ...(filters.guest_group_id ? { guest_group_id: filters.guest_group_id } : {}),
       ...(filters.invitation_type ? { invitation_type: filters.invitation_type } : {}),
     });
-    return fetch(`${BASE_URL}/api/admin/guests?${params}`, { headers: getHeaders() }).then(r => r.json());
+    const qs = params.toString();
+    const cacheKey = `adminguests_${qs}`;
+    return apiCache.fetch(cacheKey, () => fetch(`${BASE_URL}/api/admin/guests?${qs}`, { headers: getHeaders() }).then(r => r.json()));
   },
 
   create: (body) =>
@@ -43,11 +46,31 @@ const API = {
       method: 'DELETE',
       headers: getHeaders(),
     }),
+
+  markInvited: (id, status = 'sent') =>
+    fetch(`${BASE_URL}/api/admin/guests/${id}/mark-invited`, {
+      method: 'PATCH',
+      headers: getHeaders(),
+      body: JSON.stringify({ status }),
+    }).then(r => r.json()),
+
+  getSettings: () =>
+    fetch(`${BASE_URL}/api/admin/settings`, { headers: getHeaders() }).then(r => r.json()),
+};
+
+// Invalidate ALL guest list cache entries so the next fetch always hits the network
+const invalidateGuestCache = () => {
+  const cache = apiCache._cache || apiCache.cache;
+  if (cache && typeof cache.forEach === 'function') {
+    const keysToDelete = [];
+    cache.forEach((_, key) => { if (key.startsWith('adminguests_')) keysToDelete.push(key); });
+    keysToDelete.forEach(k => apiCache.delete(k));
+  }
 };
 
 const GroupAPI = {
   list: () =>
-    fetch(`${BASE_URL}/api/admin/guest-groups`, { headers: getHeaders() }).then(r => r.json()),
+    apiCache.fetch('adminguestgroups_all', () => fetch(`${BASE_URL}/api/admin/guest-groups`, { headers: getHeaders() }).then(r => r.json())),
   create: (body) =>
     fetch(`${BASE_URL}/api/admin/guest-groups`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) }).then(r => r.json()),
 };
@@ -440,6 +463,21 @@ function ImportanceBadge({ value }) {
   );
 }
 
+// ─── Invitation Type Badge ────────────────────────────────────────────────────
+function InvitationTypeBadge({ value }) {
+  const map = {
+    digital: { cls: 'bg-blue-50 text-blue-600 border-blue-100', label: '📱 Digital' },
+    physical: { cls: 'bg-amber-50 text-amber-600 border-amber-100', label: '✉️ Fisik' },
+    both: { cls: 'bg-purple-50 text-purple-600 border-purple-100', label: '📱✉️ Both' },
+  };
+  const { cls, label } = map[value] || map.digital;
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}>
+      {label}
+    </span>
+  );
+}
+
 // ─── Export CSV ───────────────────────────────────────────────────────────────
 function exportCSV(guests) {
   const header = ['Name', 'Slug', 'Phone', 'Category', 'Pax', 'Priority', 'Importance', 'Notes'];
@@ -488,14 +526,22 @@ export const AdminGuests = () => {
   // Confirm
   const [confirm, setConfirm] = useState({ open: false });
 
+  // WA template from settings
+  const [waTemplate, setWaTemplate] = useState('');
+
   const { toasts, push } = useToast();
 
   const user = authService.getAdminUser();
   const isAdmin = user?.role === 'admin';
 
-  // ── Load groups once ──
+  // ── Load groups + WA template once ──
   useEffect(() => {
     GroupAPI.list().then(r => setGroups(r.groups || [])).catch(() => { });
+    API.getSettings().then(r => {
+      // Expected settings key: wa_invite_template
+      // Supports placeholders: {name}, {link}
+      setWaTemplate(r.settings?.wa_invite_template || '');
+    }).catch(() => { });
   }, []);
 
   // ── Debounced search ──
@@ -548,6 +594,7 @@ export const AdminGuests = () => {
       if (created.error) { push(created.error, 'error'); return; }
       push('Guest added successfully', 'success');
     }
+    invalidateGuestCache();
     fetchGuests();
   };
 
@@ -562,6 +609,7 @@ export const AdminGuests = () => {
         const res = await API.remove(id);
         if (!res.ok && res.status !== 204) { push('Failed to delete guest', 'error'); return; }
         push('Guest deleted', 'success');
+        invalidateGuestCache();
         fetchGuests();
       },
     });
@@ -579,6 +627,7 @@ export const AdminGuests = () => {
         await Promise.all([...selected].map(id => API.remove(id)));
         push(`${selected.size} guests deleted`, 'success');
         setSelected(new Set());
+        invalidateGuestCache();
         fetchGuests();
       },
     });
@@ -587,6 +636,35 @@ export const AdminGuests = () => {
   const copyLink = (slug) => {
     const url = `${window.location.origin}/invite/${slug}`;
     navigator.clipboard.writeText(url).then(() => push('Invitation link copied!', 'info'));
+  };
+
+  // Build WA URL — replaces {name} and {link} in the template from settings
+  const openWhatsApp = (guest) => {
+    const phone = guest.phone_number?.replace(/\D/g, '');
+    if (!phone) { push('Nomor HP tidak tersedia', 'error'); return; }
+    const inviteLink = `${window.location.origin}/invite/${guest.slug}`;
+    const name = guest.display_name || guest.first_name || '';
+    const message = waTemplate
+      ? waTemplate.replace(/\{name\}/gi, name).replace(/\{link\}/gi, inviteLink)
+      : `Halo ${name}, berikut link undangan pernikahan kami: ${inviteLink}`;
+    const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  // Mark / unmark invite sent — optimistic update + persist
+  const handleMarkInvited = async (guest) => {
+    const newStatus = guest.invite_status === 'sent' ? 'pending' : 'sent';
+    // Optimistic update
+    setGuests(prev => prev.map(g => g.id === guest.id ? { ...g, invite_status: newStatus } : g));
+    const res = await API.markInvited(guest.id, newStatus);
+    if (res.error) {
+      // Revert on failure
+      setGuests(prev => prev.map(g => g.id === guest.id ? { ...g, invite_status: guest.invite_status } : g));
+      push('Gagal update status undangan', 'error');
+    } else {
+      push(newStatus === 'sent' ? '✓ Ditandai sudah diundang' : 'Dikembalikan ke pending', 'success');
+      invalidateGuestCache();
+    }
   };
 
   // ── Select all (current page) ──
@@ -722,8 +800,8 @@ export const AdminGuests = () => {
         </div>
 
         {/* ── Filter Bar ── */}
-        <div className={`border-b border-gray-100 overflow-hidden transition-all duration-200 ${showFilters ? 'max-h-48' : 'max-h-0'}`}>
-          <div className="px-8 py-4 flex flex-wrap gap-3 items-end bg-gray-50/50">
+        <div className={`border-b border-gray-100 overflow-hidden transition-all duration-200 ${showFilters ? 'max-h-[500px]' : 'max-h-0'}`}>
+          <div className="px-6 md:px-8 py-4 flex flex-wrap gap-3 items-end bg-gray-50/50">
 
             {/* Category */}
             <div className="flex flex-col gap-1">
@@ -816,14 +894,15 @@ export const AdminGuests = () => {
         </div>
 
         {/* ── Table ── */}
-        <div className="p-8">
+        <div className="p-0 md:p-8">
           {error && (
             <div className="mb-5 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm">
               {error}
             </div>
           )}
 
-          <div className="overflow-x-auto rounded-xl border border-gray-100">
+          {/* ── Desktop Table ── */}
+          <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-100">
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
@@ -900,11 +979,16 @@ export const AdminGuests = () => {
 
                         {/* Name + slug */}
                         <td className="py-3.5 px-4">
-                          <div className="font-semibold text-gray-900 flex items-center gap-2">
+                          <div className="font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
                             {guest.display_name}
                             {isDeleted && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-500 border border-red-200">
                                 deleted
+                              </span>
+                            )}
+                            {!isDeleted && guest.invite_status === 'sent' && (
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                ✓ sent
                               </span>
                             )}
                           </div>
@@ -945,45 +1029,61 @@ export const AdminGuests = () => {
                           </span>
                         </td>
 
-                        {/* Invitation Type */}
+                        {/* Undangan */}
                         <td className="py-3.5 px-4">
-                          {guest.invitation_type === 'both' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-violet-50 text-violet-600 border border-violet-100">
-                              📱✉️ Keduanya
-                            </span>
-                          )}
-                          {guest.invitation_type === 'digital' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-600 border border-sky-100">
-                              📱 Digital
-                            </span>
-                          )}
-                          {guest.invitation_type === 'physical' && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-600 border-amber-100">
-                              ✉️ Fisik
-                            </span>
-                          )}
-                          {!guest.invitation_type && <span className="text-gray-300">—</span>}
+                          <InvitationTypeBadge value={guest.invitation_type} />
                         </td>
 
                         {/* Notes */}
-                        <td className="py-3.5 px-4 max-w-[180px]">
-                          {guest.notes ? (
-                            <span
-                              className="text-xs text-gray-500 line-clamp-2 leading-relaxed"
-                              title={guest.notes}
-                            >
-                              {guest.notes}
-                            </span>
-                          ) : (
-                            <span className="text-gray-200">—</span>
-                          )}
+                        <td className="py-3.5 px-4 max-w-[150px]">
+                          {guest.notes
+                            ? <div className="text-xs text-gray-500 line-clamp-1 truncate" title={guest.notes}>{guest.notes}</div>
+                            : <span className="text-gray-200">—</span>}
                         </td>
 
                         {/* Actions */}
                         <td className="py-3.5 px-4">
-                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            {!isDeleted && (
+                          <div className="flex items-center justify-end gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
+                            {isDeleted ? (
+                              isAdmin && (
+                                <button
+                                  onClick={() => handleRestore(guest.id, guest.display_name)}
+                                  title="Restore guest"
+                                  className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 transition-all"
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                </button>
+                              )
+                            ) : (
                               <>
+                                {/* WhatsApp */}
+                                <button
+                                  onClick={() => openWhatsApp(guest)}
+                                  title="Kirim undangan via WhatsApp"
+                                  className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-all"
+                                >
+                                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                                    <path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.554 4.11 1.523 5.837L.057 23.882a.5.5 0 00.61.61l6.045-1.466A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.497-5.27-1.394l-.38-.22-3.933.954.97-3.934-.24-.392A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                                  </svg>
+                                </button>
+
+                                {/* Mark as invited / undo */}
+                                <button
+                                  onClick={() => handleMarkInvited(guest)}
+                                  title={guest.invite_status === 'sent' ? 'Tandai belum diundang' : 'Tandai sudah diundang'}
+                                  className={`p-1.5 rounded-lg transition-all ${guest.invite_status === 'sent'
+                                      ? 'hover:bg-amber-50 text-emerald-500 hover:text-amber-500'
+                                      : 'hover:bg-emerald-50 text-gray-400 hover:text-emerald-600'
+                                    }`}
+                                >
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                </button>
+
                                 {/* Copy link */}
                                 <button
                                   onClick={() => copyLink(guest.slug)}
@@ -1043,6 +1143,120 @@ export const AdminGuests = () => {
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* ── Mobile Card List ── */}
+          <div className="md:hidden space-y-4 px-4 pb-4">
+            {loading ? (
+              <div className="py-10 text-center text-gray-400">Loading guests...</div>
+            ) : guests.length === 0 ? (
+              <div className="py-10 text-center text-gray-400">No guests found.</div>
+            ) : (
+              guests.map((guest) => {
+                const groupName = groups.find(g => g.id === guest.guest_group_id)?.name;
+                const isDeleted = !!guest.deleted_at;
+                const isSelected = selected.has(guest.id);
+
+                return (
+                  <div
+                    key={guest.id}
+                    className={`p-5 rounded-2xl border transition-all active:scale-[0.98]
+                      ${isDeleted ? 'bg-red-50/40 border-red-100 opacity-60' : isSelected ? 'bg-gray-50 border-gray-300' : 'bg-white border-gray-100 shadow-sm'}`}
+                    onClick={() => toggleOne(guest.id)}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => { e.stopPropagation(); toggleOne(guest.id); }}
+                          className="w-5 h-5 rounded-lg border-gray-300 accent-gray-900 cursor-pointer"
+                        />
+                        <div>
+                          <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                            {guest.display_name}
+                            {isDeleted && <span className="text-[10px] text-red-500 font-bold uppercase">deleted</span>}
+                          </h3>
+                          <p className="text-xs text-gray-400 font-mono tracking-wider">{guest.slug}</p>
+                        </div>
+                      </div>
+                      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 text-xs font-black border border-gray-200">
+                        {guest.pax_allowed}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm mb-4">
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Phone</p>
+                        <p className="text-gray-700 font-medium">{guest.phone_number || '—'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Group</p>
+                        <p className="text-gray-700 truncate font-medium">{groupName || '—'}</p>
+                      </div>
+                      <div className="col-span-2 flex flex-wrap gap-2">
+                        <CategoryBadge value={guest.category} />
+                        <PriorityBadge value={guest.priority} />
+                        <ImportanceBadge value={guest.importance} />
+                        <InvitationTypeBadge value={guest.invitation_type} />
+                      </div>
+                    </div>
+
+                    {guest.notes && (
+                      <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs italic text-gray-500">
+                        "{guest.notes}"
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-50" onClick={e => e.stopPropagation()}>
+                      {isDeleted ? (
+                        isAdmin && (
+                          <button onClick={() => handleRestore(guest.id, guest.display_name)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100">
+                            Restore Guest
+                          </button>
+                        )
+                      ) : (
+                        <>
+                          {/* WA send */}
+                          <button
+                            onClick={() => openWhatsApp(guest)}
+                            title="Kirim via WhatsApp"
+                            className="p-2.5 bg-green-50 text-green-600 rounded-xl border border-green-100"
+                          >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" /><path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.554 4.11 1.523 5.837L.057 23.882a.5.5 0 00.61.61l6.045-1.466A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.497-5.27-1.394l-.38-.22-3.933.954.97-3.934-.24-.392A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                            </svg>
+                          </button>
+                          {/* Mark invited */}
+                          <button
+                            onClick={() => handleMarkInvited(guest)}
+                            title={guest.invite_status === 'sent' ? 'Undo sent' : 'Tandai sudah diundang'}
+                            className={`p-2.5 rounded-xl border ${guest.invite_status === 'sent' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </button>
+                          <a href={`/invite/${guest.slug}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-gray-50 text-gray-700 rounded-xl border border-gray-200">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          </a>
+                          {isAdmin && (
+                            <>
+                              <button onClick={() => openEdit(guest)} className="p-2.5 bg-gray-50 text-gray-600 rounded-xl border border-gray-200">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                              </button>
+                              <button onClick={() => handleDelete(guest.id, guest.display_name)} className="p-2.5 bg-red-50 text-red-500 rounded-xl border border-red-100">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              </button>
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {/* ── Pagination ── */}

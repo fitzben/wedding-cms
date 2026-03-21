@@ -15,6 +15,7 @@ import {
   AdminSettings,
   AdminGuestGroups
 } from './pages/admin';
+import { SettingsProvider } from './contexts/SettingsContext';
 
 const AdminIndexRedirect = () => {
   const user = authService.getAdminUser();
@@ -23,92 +24,94 @@ const AdminIndexRedirect = () => {
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/invite/:guestSlug" element={<Home />} />
+    <SettingsProvider>
+      <Router>
+        <Routes>
+          {/* Public Routes */}
+          <Route path="/" element={<Landing />} />
+          <Route path="/invite/:guestSlug" element={<Home />} />
 
-        {/* Admin Login */}
-        <Route path="/admin/login" element={<AdminLogin />} />
+          {/* Admin Login */}
+          <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Admin Routes */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route index element={<AdminIndexRedirect />} />
+          {/* Admin Routes */}
           <Route
-            path="dashboard"
+            path="/admin"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminDashboard />
+              <ProtectedRoute>
+                <AdminLayout />
               </ProtectedRoute>
             }
-          />
-          <Route
-            path="guests"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'parents']}>
-                <AdminGuests />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="rsvp"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminRSVP />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="gallery"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminGallery />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="guest-groups"
-            element={
-              <ProtectedRoute allowedRoles={['admin', 'parents']}>
-                <AdminGuestGroups />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="gifts"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminGifts />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="wishes"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminWishes />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="settings"
-            element={
-              <ProtectedRoute allowedRoles={['admin']}>
-                <AdminSettings />
-              </ProtectedRoute>
-            }
-          />
-        </Route>
-      </Routes>
-    </Router>
+          >
+            <Route index element={<AdminIndexRedirect />} />
+            <Route
+              path="dashboard"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="guests"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'parents']}>
+                  <AdminGuests />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="rsvp"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminRSVP />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="gallery"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminGallery />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="guest-groups"
+              element={
+                <ProtectedRoute allowedRoles={['admin', 'parents']}>
+                  <AdminGuestGroups />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="gifts"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminGifts />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="wishes"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminWishes />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminSettings />
+                </ProtectedRoute>
+              }
+            />
+          </Route>
+        </Routes>
+      </Router>
+    </SettingsProvider>
   );
 }
 

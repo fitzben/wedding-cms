@@ -582,7 +582,7 @@ export const AdminGallery = () => {
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         {/* Header */}
-        <div className="px-8 py-6 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-6 md:px-8 py-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Gallery</h1>
             <p className="text-gray-400 text-sm mt-0.5">
@@ -599,7 +599,7 @@ export const AdminGallery = () => {
         </div>
 
         {/* Body */}
-        <div className="p-8">
+        <div className="p-6 md:p-8">
           {loading ? (
             <div className="py-16 flex items-center justify-center text-gray-400 gap-2">
               <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>

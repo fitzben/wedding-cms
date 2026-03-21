@@ -48,21 +48,22 @@ export const AdminRSVP = () => {
 
   return (
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-10 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="px-6 md:p-10 border-b border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">RSVP Management</h1>
           <p className="text-gray-500">Monitor and manage guest RSVPs and meal preferences.</p>
         </div>
       </div>
       
-      <div className="p-10">
+      <div className="p-6 md:p-10">
         {error && (
           <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100">
             {error}
           </div>
         )}
         
-        <div className="overflow-x-auto rounded-xl border border-gray-100">
+        {/* ── Desktop Table ── */}
+        <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-100">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-100">
@@ -131,6 +132,49 @@ export const AdminRSVP = () => {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* ── Mobile Card List ── */}
+        <div className="md:hidden space-y-4">
+          {loading ? (
+            <div className="py-10 text-center text-gray-500">Loading RSVPs...</div>
+          ) : rsvps.length === 0 ? (
+            <div className="py-10 text-center text-gray-500">No RSVPs yet.</div>
+          ) : (
+            rsvps.map((rsvp) => (
+              <div key={rsvp.id} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm active:scale-[0.98] transition-all">
+                <div className="flex justify-between items-start mb-4">
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-base">{rsvp.name}</h3>
+                    <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{formatDate(rsvp.created_at)}</p>
+                  </div>
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getAttendanceStyle(rsvp.attendance)}`}>
+                    {rsvp.attendance}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 mb-4">
+                   <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-100">
+                     <span className="text-xs font-bold text-gray-700">{rsvp.pax}</span>
+                     <span className="text-[10px] text-gray-400 uppercase font-black">Pax</span>
+                   </div>
+                   {rsvp.guest_display_name && rsvp.guest_display_name !== rsvp.name && (
+                     <div className="flex items-center gap-1 px-3 py-1.5 bg-indigo-50/50 rounded-lg border border-indigo-100/50">
+                       <span className="text-[10px] text-indigo-400 font-bold uppercase">Linked:</span>
+                       <span className="text-xs font-semibold text-indigo-600 truncate max-w-[120px]">{rsvp.guest_display_name}</span>
+                     </div>
+                   )}
+                </div>
+
+                {rsvp.message && (
+                  <div className="p-4 bg-maroon/5 rounded-xl border border-maroon/10 relative">
+                    <svg className="absolute top-2 left-2 w-4 h-4 text-maroon/10" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017V11H14.017V6H19.017C20.1216 6 21.017 6.89543 21.017 8V18C21.017 19.6569 19.6739 21 18.017 21H14.017ZM3.01705 21L3.01705 18C3.01705 16.8954 3.91248 16 5.01705 16H8.01705V11H3.01705V6H8.01705C9.12162 6 10.017 6.89543 10.017 8V18C10.017 19.6569 8.6739 21 7.01705 21H3.01705Z"/></svg>
+                    <p className="text-sm text-gray-700 italic leading-relaxed pl-4">"{rsvp.message}"</p>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

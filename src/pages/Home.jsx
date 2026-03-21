@@ -15,13 +15,19 @@ import CustomCursor from '../components/CustomCursor';
 import LoadingScreen from '../components/LoadingScreen';
 import useGuest from '../hooks/useGuest';
 import useAudioControl from '../hooks/useAudioControl';
+import { useSettings } from '../contexts/SettingsContext';
 
 const Home = () => {
   const { guestSlug } = useParams();
   const { guest, loading } = useGuest(guestSlug);
+  const { settings } = useSettings();
   const audioRef = useAudioControl();
   const [invitationOpened, setInvitationOpened] = useState(false);
   const guestName = guest?.display_name || 'Guest Name';
+
+  // Toggle flags (default true for safety if settings not loaded yet)
+  const isRsvpEnabled = settings?.rsvp_enabled !== false;
+  const isGiftEnabled = settings?.gift_enabled !== false;
 
   useEffect(() => {
     // Prevent browser scroll restoration
@@ -97,11 +103,11 @@ const Home = () => {
           <ManadoDivider className="bg-offwhite pt-[100px]" />
 
           <Gallery />
-          <RSVP />
+          {isRsvpEnabled && <RSVP />}
 
           <ManadoDivider className="bg-ivory pt-[100px]" />
 
-          <GiftRegistry />
+          {isGiftEnabled && <GiftRegistry />}
           <Footer />
         </main>
 

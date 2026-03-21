@@ -1,10 +1,20 @@
 import { useState } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { Icon } from '@iconify/react';
+import { useSettings } from '../contexts/SettingsContext';
 
 const CoupleIntro = () => {
   useScrollReveal();
   const [hoveredProfile, setHoveredProfile] = useState(null);
+  const { settings } = useSettings();
+
+  const groomName = settings?.groom_name || 'Benjamin';
+  const brideName = settings?.bride_name || 'Angelin';
+  const groomNickname = settings?.groom_nickname || 'Benjamin';
+  const brideNickname = settings?.bride_nickname || 'Angelin';
+
+  const groomIG = settings?.groom_instagram;
+  const brideIG = settings?.bride_instagram;
 
   return (
     <section id="section-couple" className="py-32 bg-ivory relative overflow-hidden">
@@ -43,21 +53,35 @@ const CoupleIntro = () => {
                 <div className="absolute inset-0 bg-maroon/0 group-hover:bg-maroon/10 transition-colors duration-500"></div>
               </div>
             </div>
+            
             <h2 className="font-serif text-4xl text-charcoal mb-1 font-normal obs-hide obs-letter-spacing">
-              Benjamin
+              {groomNickname}
             </h2>
-            <p className="text-maroon text-xs uppercase tracking-[0.2em] font-light mb-3">The Groom</p>
-            <a 
-              href="https://instagram.com/benjamin" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-charcoal/60 hover:text-maroon transition-colors group/link cursor-pointer relative"
-            >
-              <Icon icon="mdi:instagram" className="text-lg group-hover/link:-translate-y-1 transition-transform duration-300" />
-              <span className="font-sans text-xs tracking-wider relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:bottom-0 after:left-0 after:bg-maroon after:origin-bottom-right after:transition-transform after:duration-300 group-hover/link:after:scale-x-100 group-hover/link:after:origin-bottom-left">
-                @benjamin
-              </span>
-            </a>
+            <p className="text-maroon text-[10px] sm:text-xs uppercase tracking-[0.2em] font-light mb-1">{groomName}</p>
+            <p className="text-charcoal/40 text-[10px] uppercase tracking-[0.2em] font-light mb-4">The Groom</p>
+
+            <div className="space-y-1 mb-6">
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-light">
+                {settings?.groom_child_order || 'Putra Pertama dari'}
+              </p>
+              <p className="text-sm font-serif italic text-charcoal/80">
+                Bpk. {settings?.groom_father || 'Father Name'} & Ibu {settings?.groom_mother || 'Mother Name'}
+              </p>
+            </div>
+
+            {groomIG && (
+              <a 
+                href={`https://instagram.com/${groomIG.replace('@', '')}`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-charcoal/60 hover:text-maroon transition-colors group/link cursor-pointer relative"
+              >
+                <Icon icon="mdi:instagram" className="text-lg group-hover/link:-translate-y-1 transition-transform duration-300" />
+                <span className="font-sans text-xs tracking-wider relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:bottom-0 after:left-0 after:bg-maroon after:origin-bottom-right after:transition-transform after:duration-300 group-hover/link:after:scale-x-100 group-hover/link:after:origin-bottom-left">
+                  @{groomIG.replace('@', '')}
+                </span>
+              </a>
+            )}
           </div>
 
           {/* Animated Connector */}
@@ -100,21 +124,35 @@ const CoupleIntro = () => {
                 <div className="absolute inset-0 bg-maroon/0 group-hover:bg-maroon/10 transition-colors duration-500"></div>
               </div>
             </div>
+            
             <h2 className="font-serif text-4xl text-charcoal mb-1 font-normal obs-hide obs-letter-spacing">
-              Angelin
+              {brideNickname}
             </h2>
-            <p className="text-maroon text-xs uppercase tracking-[0.2em] font-light mb-3">The Bride</p>
-            <a 
-              href="https://instagram.com/angelin" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-charcoal/60 hover:text-maroon transition-colors group/link cursor-pointer relative"
-            >
-              <Icon icon="mdi:instagram" className="text-lg group-hover/link:-translate-y-1 transition-transform duration-300" />
-              <span className="font-sans text-xs tracking-wider relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:bottom-0 after:left-0 after:bg-maroon after:origin-bottom-right after:transition-transform after:duration-300 group-hover/link:after:scale-x-100 group-hover/link:after:origin-bottom-left">
-                @angelin
-              </span>
-            </a>
+            <p className="text-maroon text-[10px] sm:text-xs uppercase tracking-[0.2em] font-light mb-1">{brideName}</p>
+            <p className="text-charcoal/40 text-[10px] uppercase tracking-[0.2em] font-light mb-4">The Bride</p>
+
+            <div className="space-y-1 mb-6">
+              <p className="text-[10px] text-gray-400 uppercase tracking-widest font-light">
+                {settings?.bride_child_order || 'Putri Pertama dari'}
+              </p>
+              <p className="text-sm font-serif italic text-charcoal/80">
+                Bpk. {settings?.bride_father || 'Father Name'} & Ibu {settings?.bride_mother || 'Mother Name'}
+              </p>
+            </div>
+
+            {brideIG && (
+              <a 
+                href={`https://instagram.com/${brideIG.replace('@', '')}`}
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-charcoal/60 hover:text-maroon transition-colors group/link cursor-pointer relative"
+              >
+                <Icon icon="mdi:instagram" className="text-lg group-hover/link:-translate-y-1 transition-transform duration-300" />
+                <span className="font-sans text-xs tracking-wider relative after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-[1px] after:bottom-0 after:left-0 after:bg-maroon after:origin-bottom-right after:transition-transform after:duration-300 group-hover/link:after:scale-x-100 group-hover/link:after:origin-bottom-left">
+                  @{brideIG.replace('@', '')}
+                </span>
+              </a>
+            )}
           </div>
         </div>
       </div>

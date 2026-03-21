@@ -40,5 +40,12 @@ export const isAuthenticated = () => {
 
 export const getAdminUser = () => {
   const user = localStorage.getItem('admin_user');
-  return user ? JSON.parse(user) : null;
+  if (!user) return null;
+  try {
+    return JSON.parse(user);
+  } catch (error) {
+    console.error('Error parsing admin_user from localStorage:', error);
+    localStorage.removeItem('admin_user');
+    return null;
+  }
 };
