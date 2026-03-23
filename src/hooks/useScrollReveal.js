@@ -5,7 +5,7 @@ import { useEffect } from 'react';
  * It observes all elements with the class 'obs-hide' and adds the 'active' class
  * when they scroll into view, triggering their respective entrance animations.
  */
-export const useScrollReveal = () => {
+export const useScrollReveal = (deps = []) => {
   useEffect(() => {
     const observer = new IntersectionObserver((entries, obs) => {
       entries.forEach(entry => {
@@ -19,10 +19,10 @@ export const useScrollReveal = () => {
     const elements = document.querySelectorAll('.obs-hide');
     elements.forEach(el => observer.observe(el));
 
-    // Cleanup observer on unmount
+    // Cleanup observer on unmount or re-render
     return () => {
       elements.forEach(el => observer.unobserve(el));
       observer.disconnect();
     };
-  }, []);
+  }, deps);
 };
