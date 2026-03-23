@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { Icon } from '@iconify/react';
-import { useSettings } from '../contexts/SettingsContext';
+import useSettings from '../hooks/useSettings';
 
 const CoupleIntro = () => {
-  useScrollReveal();
   const [hoveredProfile, setHoveredProfile] = useState(null);
   const { settings } = useSettings();
+  useScrollReveal([settings]);
 
   const groomName = settings?.groom_name || 'Benjamin';
   const brideName = settings?.bride_name || 'Angelin';

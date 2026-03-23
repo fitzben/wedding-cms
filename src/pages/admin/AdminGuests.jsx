@@ -59,12 +59,15 @@ const API = {
 };
 
 // Invalidate ALL guest list cache entries so the next fetch always hits the network
-const invalidateGuestCache = () => {
+const invalidateGuestCache = (slug = null) => {
   const cache = apiCache._cache || apiCache.cache;
   if (cache && typeof cache.forEach === 'function') {
     const keysToDelete = [];
     cache.forEach((_, key) => { if (key.startsWith('adminguests_')) keysToDelete.push(key); });
     keysToDelete.forEach(k => apiCache.delete(k));
+  }
+  if (slug) {
+    apiCache.delete(`guest_${slug}`);
   }
 };
 
@@ -154,7 +157,15 @@ const EMPTY_FORM = {
   notes: '',
   guest_group_id: '',
   invitation_type: 'digital',
+  event_access_override: '',  // '' = inherit from group
 };
+
+const EVENT_ACCESS_OPTIONS = [
+  { value: '',             label: 'Ikut Group',    icon: '↩️', hint: true },
+  { value: 'both',         label: 'HM + Resepsi',  icon: '🎊' },
+  { value: 'hm_only',      label: 'HM Only',       icon: '⛪' },
+  { value: 'resepsi_only', label: 'Resepsi Only',  icon: '🥂' },
+];
 
 function GuestModal({ open, onClose, onSave, initial, groups }) {
   const [form, setForm] = useState(EMPTY_FORM);
@@ -175,6 +186,7 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
         notes: initial.notes || '',
         guest_group_id: initial.guest_group_id || '',
         invitation_type: initial.invitation_type || 'digital',
+        event_access_override: initial.event_access_override || '',
       } : EMPTY_FORM);
       setErrors({});
       setTimeout(() => firstRef.current?.focus(), 80);
@@ -347,6 +359,42 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
             </select>
           </div>
 
+          {/* Event Access Override */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+              Akses Acara
+              <span className="ml-1.5 text-gray-300 font-normal normal-case tracking-normal">override per-tamu</span>
+            </label>
+            <div className="flex gap-2 flex-wrap">
+              {EVENT_ACCESS_OPTIONS.map(({ value, label, icon, hint }) => {
+                // Find group default to show hint
+                const group = (groups || []).find(g => g.id === form.guest_group_id);
+                const groupAccess = group?.default_event_access || 'both';
+                const accessMap = { both: 'HM + Resepsi', hm_only: 'HM Only', resepsi_only: 'Resepsi Only' };
+                const hintLabel = hint ? `Ikut Group (${accessMap[groupAccess] || 'HM + Resepsi'})` : label;
+                return (
+                  <label
+                    key={value}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-all select-none
+                      ${form.event_access_override === value
+                        ? 'bg-gray-900 text-white border-gray-900'
+                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                  >
+                    <input
+                      type="radio"
+                      name="event_access_override"
+                      value={value}
+                      checked={form.event_access_override === value}
+                      onChange={() => setForm(p => ({ ...p, event_access_override: value }))}
+                      className="sr-only"
+                    />
+                    {icon} {hintLabel}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Invitation Type */}
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Jenis Undangan</label>
@@ -478,6 +526,22 @@ function InvitationTypeBadge({ value }) {
   );
 }
 
+// ─── Event Access Badge ──────────────────────────────────────────────────────
+function EventAccessBadge({ access, isOverride = false }) {
+  const map = {
+    both:         { cls: 'bg-indigo-50 text-indigo-600 border-indigo-100', label: 'HM + Resepsi', icon: '🎊' },
+    hm_only:      { cls: 'bg-sky-50 text-sky-600 border-sky-100',         label: 'HM Only',      icon: '⛪' },
+    resepsi_only: { cls: 'bg-rose-50 text-rose-600 border-rose-100',       label: 'Resepsi Only', icon: '🥂' },
+  };
+  const { cls, label, icon } = map[access] || map.both;
+  return (
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}>
+      {icon} {label}
+      {isOverride && <span className="opacity-60 text-[9px] ml-0.5">override</span>}
+    </span>
+  );
+}
+
 // ─── Export CSV ───────────────────────────────────────────────────────────────
 function exportCSV(guests) {
   const header = ['Name', 'Slug', 'Phone', 'Category', 'Pax', 'Priority', 'Importance', 'Notes'];
@@ -594,7 +658,7 @@ export const AdminGuests = () => {
       if (created.error) { push(created.error, 'error'); return; }
       push('Guest added successfully', 'success');
     }
-    invalidateGuestCache();
+    invalidateGuestCache(editGuest?.slug);
     fetchGuests();
   };
 
@@ -663,7 +727,7 @@ export const AdminGuests = () => {
       push('Gagal update status undangan', 'error');
     } else {
       push(newStatus === 'sent' ? '✓ Ditandai sudah diundang' : 'Dikembalikan ke pending', 'success');
-      invalidateGuestCache();
+      invalidateGuestCache(guest.slug);
     }
   };
 
@@ -922,6 +986,7 @@ export const AdminGuests = () => {
                   <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Importance</th>
                   <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">Pax</th>
                   <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Undangan</th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Akses Acara</th>
                   <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Notes</th>
                   <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">{isAdmin ? 'Actions' : 'Links'}</th>
                 </tr>
@@ -1032,6 +1097,14 @@ export const AdminGuests = () => {
                         {/* Undangan */}
                         <td className="py-3.5 px-4">
                           <InvitationTypeBadge value={guest.invitation_type} />
+                        </td>
+
+                        {/* Akses Acara */}
+                        <td className="py-3.5 px-4">
+                          <EventAccessBadge
+                            access={guest.resolved_event_access || 'both'}
+                            isOverride={!!guest.event_access_override}
+                          />
                         </td>
 
                         {/* Notes */}
@@ -1199,6 +1272,10 @@ export const AdminGuests = () => {
                         <PriorityBadge value={guest.priority} />
                         <ImportanceBadge value={guest.importance} />
                         <InvitationTypeBadge value={guest.invitation_type} />
+                        <EventAccessBadge
+                          access={guest.resolved_event_access || 'both'}
+                          isOverride={!!guest.event_access_override}
+                        />
                       </div>
                     </div>
 

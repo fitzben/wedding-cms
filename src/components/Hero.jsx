@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Icon } from '@iconify/react';
-import { useSettings } from '../contexts/SettingsContext';
+import useSettings from '../hooks/useSettings';
 
 const Hero = ({ guestName, onOpenInvitation }) => {
   const { settings } = useSettings();

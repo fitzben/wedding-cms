@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useSettings } from '../contexts/SettingsContext';
+import useSettings from '../hooks/useSettings';
 
 const Landing = () => {
   const { settings } = useSettings();

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
-import { useSettings } from '../contexts/SettingsContext';
+import useSettings from '../hooks/useSettings';
 
 const Hashtag = ({ isVisible }) => {
   useScrollReveal();

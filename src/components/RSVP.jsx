@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { getWishes } from '../services/wishService';
-import { useSettings } from '../contexts/SettingsContext';
+import useSettings from '../hooks/useSettings';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 

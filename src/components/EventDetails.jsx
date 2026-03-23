@@ -1,6 +1,5 @@
 import { Icon } from '@iconify/react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
-import { useSettings } from '../contexts/SettingsContext';
 
 // ─── EventCard defined OUTSIDE parent to avoid remount on every re-render ─────
 const EventCard = ({ title, venue, time, address, mapsUrl, delay }) => (
@@ -49,9 +48,11 @@ const EventCard = ({ title, venue, time, address, mapsUrl, delay }) => (
 );
 
 // ─── EventDetails ─────────────────────────────────────────────────────────────
-const EventDetails = () => {
-  useScrollReveal();
-  const { settings } = useSettings();
+const EventDetails = ({ eventAccess, settings = {} }) => {
+  const showHM = eventAccess === 'both' || eventAccess === 'hm_only';
+  const showResepsi = eventAccess === 'both' || eventAccess === 'resepsi_only';
+
+  useScrollReveal([eventAccess]);
 
   return (
     <section id="section-celebration" className="py-32 bg-batak-grid min-h-[600px] block relative z-1 bg-maroon">
@@ -61,22 +62,26 @@ const EventDetails = () => {
         </h2>
 
         <div className="flex flex-col md:flex-row gap-8 justify-center flex-wrap">
-          <EventCard
-            title="Holy Matrimony"
-            venue={settings?.hm_venue_name}
-            time={settings?.hm_time_start ? `${settings.hm_time_start} - ${settings.hm_time_end || 'End'}` : null}
-            address={settings?.hm_address}
-            mapsUrl={settings?.hm_maps_url}
-            delay="200ms"
-          />
-          <EventCard
-            title="Wedding Reception"
-            venue={settings?.resepsi_venue_name}
-            time={settings?.resepsi_time_start ? `${settings.resepsi_time_start} - ${settings.resepsi_time_end || 'End'}` : null}
-            address={settings?.resepsi_address}
-            mapsUrl={settings?.resepsi_maps_url}
-            delay="350ms"
-          />
+          {showHM && (
+            <EventCard
+              title="Holy Matrimony"
+              venue={settings?.hm_venue_name}
+              time={settings?.hm_time_start ? `${settings.hm_time_start} - ${settings.hm_time_end || 'End'}` : null}
+              address={settings?.hm_address}
+              mapsUrl={settings?.hm_maps_url}
+              delay="200ms"
+            />
+          )}
+          {showResepsi && (
+            <EventCard
+              title="Wedding Reception"
+              venue={settings?.resepsi_venue_name}
+              time={settings?.resepsi_time_start ? `${settings.resepsi_time_start} - ${settings.resepsi_time_end || 'End'}` : null}
+              address={settings?.resepsi_address}
+              mapsUrl={settings?.resepsi_maps_url}
+              delay="350ms"
+            />
+          )}
         </div>
       </div>
     </section>

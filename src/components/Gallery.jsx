@@ -3,9 +3,10 @@ import { useScrollReveal } from '../hooks/useScrollReveal';
 import { getGallerySections, getGalleryMedia } from '../services/galleryService';
 
 const Gallery = () => {
-  useScrollReveal();
   const [media, setMedia] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useScrollReveal([media, loading]);
 
   useEffect(() => {
     const loadGallery = async () => {

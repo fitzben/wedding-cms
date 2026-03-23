@@ -9,53 +9,44 @@ export default function useGuest(slug) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const started = Date.now();
-
-    const finish = (data) => {
-      const elapsed = Date.now() - started;
-      const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
-      setTimeout(() => {
-        if (data !== undefined) setGuest(data);
-        setLoading(false);
-      }, remaining);
-    };
-
     if (!slug) {
-      finish(null);
+      setGuest(null);
+      setLoading(false);
       return;
     }
 
+    const started = Date.now();
     const cacheKey = `guest_${slug}`;
-    const cached = localStorage.getItem(cacheKey);
+    const TTL_5_MIN = 5 * 60 * 1000;
 
-    if (cached) {
-      try {
-        const data = JSON.parse(cached);
-        finish(data);
-        return;
-      } catch {
-        localStorage.removeItem(cacheKey);
-      }
-    }
-
-    const networkFetch = () => {
-      return apiCache.fetch(cacheKey, () => {
-        return fetch(`${BASE_URL}/api/guests/slug/${slug}`)
-          .then((res) => res.json())
-          .then((data) => {
-            localStorage.setItem(cacheKey, JSON.stringify(data));
-            return data;
-          });
-      });
-    };
-
-    networkFetch()
-      .then((data) => {
-        finish(data);
-      })
-      .catch(() => {
-        finish(null);
-      });
+    // Use enhanced apiCache which now handles localStorage and TTL
+    apiCache.fetch(cacheKey, () => {
+      return fetch(`${BASE_URL}/api/guests/slug/${slug}`)
+        .then((res) => {
+          if (!res.ok) throw new Error('Guest not found');
+          return res.json();
+        });
+    }, { 
+      ttlMs: TTL_5_MIN, 
+      useLocalStorage: true 
+    })
+    .then((data) => {
+      const elapsed = Date.now() - started;
+      const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
+      setTimeout(() => {
+        setGuest(data);
+        setLoading(false);
+      }, remaining);
+    })
+    .catch((err) => {
+      console.error('Error fetching guest:', err);
+      const elapsed = Date.now() - started;
+      const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
+      setTimeout(() => {
+        setGuest(null);
+        setLoading(false);
+      }, remaining);
+    });
   }, [slug]);
 
   return { guest, loading };

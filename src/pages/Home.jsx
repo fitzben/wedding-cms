@@ -14,8 +14,8 @@ import MusicPlayer from '../components/MusicPlayer';
 import CustomCursor from '../components/CustomCursor';
 import LoadingScreen from '../components/LoadingScreen';
 import useGuest from '../hooks/useGuest';
+import useSettings from '../hooks/useSettings';
 import useAudioControl from '../hooks/useAudioControl';
-import { useSettings } from '../contexts/SettingsContext';
 
 const Home = () => {
   const { guestSlug } = useParams();
@@ -24,10 +24,12 @@ const Home = () => {
   const audioRef = useAudioControl();
   const [invitationOpened, setInvitationOpened] = useState(false);
   const guestName = guest?.display_name || 'Guest Name';
+  console.log({ guest })
 
   // Toggle flags (default true for safety if settings not loaded yet)
   const isRsvpEnabled = settings?.rsvp_enabled !== false;
   const isGiftEnabled = settings?.gift_enabled !== false;
+  const eventAccess = guest?.resolved_event_access
 
   useEffect(() => {
     // Prevent browser scroll restoration
@@ -98,7 +100,10 @@ const Home = () => {
 
           <BatakDivider className="bg-offwhite z-20 py-8 relative" />
 
-          <EventDetails />
+          <EventDetails
+            eventAccess={eventAccess}
+            settings={settings}
+          />
 
           <ManadoDivider className="bg-offwhite pt-[100px]" />
 
