@@ -1,70 +1,51 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import * as authService from '../../services/authService';
-import { apiCache } from '../../services/apiCache';
+import { useState, useEffect, useRef, useCallback } from "react";
+import * as authService from "../../services/authService";
+import { apiCache } from "../../services/apiCache";
+import { apiClient } from "../../services/apiClient";
 
 // ─── API helpers ────────────────────────────────────────────────────────────
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
-
-const getHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${localStorage.getItem('token')}`
-});
-
 const API = {
   list: (page, limit, search, showDeleted = false, filters = {}) => {
     const params = new URLSearchParams({
-      page, limit,
+      page,
+      limit,
       search: encodeURIComponent(search),
       show_deleted: showDeleted,
       ...(filters.category ? { category: filters.category } : {}),
       ...(filters.priority ? { priority: filters.priority } : {}),
       ...(filters.importance ? { importance: filters.importance } : {}),
-      ...(filters.guest_group_id ? { guest_group_id: filters.guest_group_id } : {}),
-      ...(filters.invitation_type ? { invitation_type: filters.invitation_type } : {}),
+      ...(filters.guest_group_id
+        ? { guest_group_id: filters.guest_group_id }
+        : {}),
+      ...(filters.invitation_type
+        ? { invitation_type: filters.invitation_type }
+        : {}),
     });
     const qs = params.toString();
     const cacheKey = `adminguests_${qs}`;
-    return apiCache.fetch(cacheKey, () => fetch(`${BASE_URL}/api/admin/guests?${qs}`, { headers: getHeaders() }).then(r => r.json()));
+    return apiCache.fetch(cacheKey, () =>
+      apiClient.get(`/api/admin/guests?${qs}`),
+    );
   },
 
-  create: (body) =>
-    fetch(`${BASE_URL}/api/admin/guests`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify(body),
-    }).then(r => r.json()),
-
-  update: (id, body) =>
-    fetch(`${BASE_URL}/api/admin/guests/${id}`, {
-      method: 'PUT',
-      headers: getHeaders(),
-      body: JSON.stringify(body),
-    }).then(r => r.json()),
-
-  remove: (id) =>
-    fetch(`${BASE_URL}/api/admin/guests/${id}`, {
-      method: 'DELETE',
-      headers: getHeaders(),
-    }),
-
-  markInvited: (id, status = 'sent') =>
-    fetch(`${BASE_URL}/api/admin/guests/${id}/mark-invited`, {
-      method: 'PATCH',
-      headers: getHeaders(),
-      body: JSON.stringify({ status }),
-    }).then(r => r.json()),
-
-  getSettings: () =>
-    fetch(`${BASE_URL}/api/admin/settings`, { headers: getHeaders() }).then(r => r.json()),
+  create: (body) => apiClient.post("/api/admin/guests", body),
+  update: (id, body) => apiClient.put(`/api/admin/guests/${id}`, body),
+  remove: (id) => apiClient.delete(`/api/admin/guests/${id}`),
+  restore: (id) => apiClient.post(`/api/admin/guests/${id}/restore`),
+  markInvited: (id, status = "sent") =>
+    apiClient.patch(`/api/admin/guests/${id}/mark-invited`, { status }),
+  getSettings: () => apiClient.get("/api/admin/settings"),
 };
 
 // Invalidate ALL guest list cache entries so the next fetch always hits the network
 const invalidateGuestCache = (slug = null) => {
   const cache = apiCache._cache || apiCache.cache;
-  if (cache && typeof cache.forEach === 'function') {
+  if (cache && typeof cache.forEach === "function") {
     const keysToDelete = [];
-    cache.forEach((_, key) => { if (key.startsWith('adminguests_')) keysToDelete.push(key); });
-    keysToDelete.forEach(k => apiCache.delete(k));
+    cache.forEach((_, key) => {
+      if (key.startsWith("adminguests_")) keysToDelete.push(key);
+    });
+    keysToDelete.forEach((k) => apiCache.delete(k));
   }
   if (slug) {
     apiCache.delete(`guest_${slug}`);
@@ -73,28 +54,29 @@ const invalidateGuestCache = (slug = null) => {
 
 const GroupAPI = {
   list: () =>
-    apiCache.fetch('adminguestgroups_all', () => fetch(`${BASE_URL}/api/admin/guest-groups`, { headers: getHeaders() }).then(r => r.json())),
-  create: (body) =>
-    fetch(`${BASE_URL}/api/admin/guest-groups`, { method: 'POST', headers: getHeaders(), body: JSON.stringify(body) }).then(r => r.json()),
+    apiCache.fetch("adminguestgroups_all", () =>
+      apiClient.get("/api/admin/guest-groups"),
+    ),
+  create: (body) => apiClient.post("/api/admin/guest-groups", body),
 };
 
 // ─── Toast ───────────────────────────────────────────────────────────────────
 function Toast({ toasts }) {
   return (
     <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
-      {toasts.map(t => (
+      {toasts.map((t) => (
         <div
           key={t.id}
           className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto
             transition-all duration-300
-            ${t.type === 'success' ? 'bg-emerald-900 text-emerald-100 border border-emerald-700' : ''}
-            ${t.type === 'error' ? 'bg-red-900 text-red-100 border border-red-700' : ''}
-            ${t.type === 'info' ? 'bg-gray-800 text-gray-100 border border-gray-600' : ''}
+            ${t.type === "success" ? "bg-emerald-900 text-emerald-100 border border-emerald-700" : ""}
+            ${t.type === "error" ? "bg-red-900 text-red-100 border border-red-700" : ""}
+            ${t.type === "info" ? "bg-gray-800 text-gray-100 border border-gray-600" : ""}
           `}
         >
-          {t.type === 'success' && <span>✓</span>}
-          {t.type === 'error' && <span>✕</span>}
-          {t.type === 'info' && <span>ℹ</span>}
+          {t.type === "success" && <span>✓</span>}
+          {t.type === "error" && <span>✕</span>}
+          {t.type === "info" && <span>ℹ</span>}
           {t.message}
         </div>
       ))}
@@ -104,10 +86,10 @@ function Toast({ toasts }) {
 
 function useToast() {
   const [toasts, setToasts] = useState([]);
-  const push = useCallback((message, type = 'info') => {
+  const push = useCallback((message, type = "info") => {
     const id = Date.now();
-    setToasts(p => [...p, { id, message, type }]);
-    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 3200);
+    setToasts((p) => [...p, { id, message, type }]);
+    setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3200);
   }, []);
   return { toasts, push };
 }
@@ -117,7 +99,10 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, danger }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onCancel} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onCancel}
+      />
       <div className="relative bg-white rounded-2xl shadow-2xl p-7 w-full max-w-sm mx-4 border border-gray-100">
         <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
         <p className="text-gray-500 text-sm mb-6">{message}</p>
@@ -131,7 +116,7 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, danger }) {
           <button
             onClick={onConfirm}
             className={`px-4 py-2 rounded-xl text-white text-sm font-semibold transition-all shadow-sm
-              ${danger ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-900 hover:bg-gray-800'}`}
+              ${danger ? "bg-red-500 hover:bg-red-600" : "bg-gray-900 hover:bg-gray-800"}`}
           >
             Confirm
           </button>
@@ -142,29 +127,33 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel, danger }) {
 }
 
 // ─── Guest Modal (Create / Edit) ─────────────────────────────────────────────
-const CATEGORIES = ['friend', 'family', 'colleague'];
-const PRIORITIES = ['low', 'medium', 'high'];
-const IMPORTANCES = ['normal', 'vip', 'vvip'];
+const CATEGORIES = ["friend", "family", "colleague"];
+const PRIORITIES = ["low", "medium", "high"];
+const IMPORTANCES = ["normal", "vip", "vvip"];
 const INVITE_TYPES = [
-  { value: 'digital', label: 'Digital' },
-  { value: 'physical', label: 'Fisik' },
-  { value: 'both', label: 'Digital + Fisik' },
+  { value: "digital", label: "Digital" },
+  { value: "physical", label: "Fisik" },
+  { value: "both", label: "Digital + Fisik" },
 ];
 const EMPTY_FORM = {
-  first_name: '', last_name: '', phone_number: '',
-  category: 'friend', pax_allowed: 1,
-  priority: 'medium', importance: 'normal',
-  notes: '',
-  guest_group_id: '',
-  invitation_type: 'digital',
-  event_access_override: '',  // '' = inherit from group
+  first_name: "",
+  last_name: "",
+  phone_number: "",
+  category: "friend",
+  pax_allowed: 1,
+  priority: "medium",
+  importance: "normal",
+  notes: "",
+  guest_group_id: "",
+  invitation_type: "digital",
+  event_access_override: "", // '' = inherit from group
 };
 
 const EVENT_ACCESS_OPTIONS = [
-  { value: '',             label: 'Ikut Group',    icon: '↩️', hint: true },
-  { value: 'both',         label: 'HM + Resepsi',  icon: '🎊' },
-  { value: 'hm_only',      label: 'HM Only',       icon: '⛪' },
-  { value: 'resepsi_only', label: 'Resepsi Only',  icon: '🥂' },
+  { value: "", label: "Ikut Group", icon: "↩️", hint: true },
+  { value: "both", label: "HM + Resepsi", icon: "🎊" },
+  { value: "hm_only", label: "HM Only", icon: "⛪" },
+  { value: "resepsi_only", label: "Resepsi Only", icon: "🥂" },
 ];
 
 function GuestModal({ open, onClose, onSave, initial, groups }) {
@@ -175,19 +164,27 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
 
   useEffect(() => {
     if (open) {
-      setForm(initial ? {
-        first_name: initial.first_name || initial.display_name?.split(' ')[0] || '',
-        last_name: initial.last_name || initial.display_name?.split(' ').slice(1).join(' ') || '',
-        phone_number: initial.phone_number || '',
-        category: initial.category || 'friend',
-        pax_allowed: initial.pax_allowed || 1,
-        priority: initial.priority || 'medium',
-        importance: initial.importance || 'normal',
-        notes: initial.notes || '',
-        guest_group_id: initial.guest_group_id || '',
-        invitation_type: initial.invitation_type || 'digital',
-        event_access_override: initial.event_access_override || '',
-      } : EMPTY_FORM);
+      setForm(
+        initial
+          ? {
+              first_name:
+                initial.first_name || initial.display_name?.split(" ")[0] || "",
+              last_name:
+                initial.last_name ||
+                initial.display_name?.split(" ").slice(1).join(" ") ||
+                "",
+              phone_number: initial.phone_number || "",
+              category: initial.category || "friend",
+              pax_allowed: initial.pax_allowed || 1,
+              priority: initial.priority || "medium",
+              importance: initial.importance || "normal",
+              notes: initial.notes || "",
+              guest_group_id: initial.guest_group_id || "",
+              invitation_type: initial.invitation_type || "digital",
+              event_access_override: initial.event_access_override || "",
+            }
+          : EMPTY_FORM,
+      );
       setErrors({});
       setTimeout(() => firstRef.current?.focus(), 80);
     }
@@ -195,16 +192,19 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
 
   const validate = () => {
     const e = {};
-    if (!form.first_name.trim()) e.first_name = 'Required';
-    if (!form.last_name.trim()) e.last_name = 'Required';
-    if (!form.phone_number.trim()) e.phone_number = 'Required';
-    if (form.pax_allowed < 1 || form.pax_allowed > 20) e.pax_allowed = '1–20';
+    if (!form.first_name.trim()) e.first_name = "Required";
+    if (!form.last_name.trim()) e.last_name = "Required";
+    if (!form.phone_number.trim()) e.phone_number = "Required";
+    if (form.pax_allowed < 1 || form.pax_allowed > 20) e.pax_allowed = "1–20";
     return e;
   };
 
   const handleSubmit = async () => {
     const e = validate();
-    if (Object.keys(e).length) { setErrors(e); return; }
+    if (Object.keys(e).length) {
+      setErrors(e);
+      return;
+    }
     setSaving(true);
     try {
       await onSave(form);
@@ -218,11 +218,11 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
     value: form[key],
     onChange: (ev) => {
       let val = ev.target.value;
-      if (key === 'phone_number' && val.startsWith('0')) {
-        val = '62' + val.substring(1);
+      if (key === "phone_number" && val.startsWith("0")) {
+        val = "62" + val.substring(1);
       }
-      setForm(p => ({ ...p, [key]: val }));
-      setErrors(p => ({ ...p, [key]: '' }));
+      setForm((p) => ({ ...p, [key]: val }));
+      setErrors((p) => ({ ...p, [key]: "" }));
     },
   });
 
@@ -230,21 +230,39 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
       <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="px-7 pt-7 pb-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900">
-              {initial ? 'Edit Guest' : 'Add New Guest'}
+              {initial ? "Edit Guest" : "Add New Guest"}
             </h2>
             <p className="text-gray-400 text-sm mt-0.5">
-              {initial ? 'Update guest information' : 'Fill in the details below'}
+              {initial
+                ? "Update guest information"
+                : "Fill in the details below"}
             </p>
           </div>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-all"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -253,90 +271,126 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
         <div className="px-7 py-6 space-y-4 overflow-y-auto">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">First Name</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                First Name
+              </label>
               <input
                 ref={firstRef}
-                {...field('first_name')}
+                {...field("first_name")}
                 placeholder="e.g. Budi"
                 className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none
-                  ${errors.first_name ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100'}`}
+                  ${errors.first_name ? "border-red-300 bg-red-50" : "border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"}`}
               />
-              {errors.first_name && <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>}
+              {errors.first_name && (
+                <p className="text-red-500 text-xs mt-1">{errors.first_name}</p>
+              )}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Last Name</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Last Name
+              </label>
               <input
-                {...field('last_name')}
+                {...field("last_name")}
                 placeholder="e.g. Santoso"
                 className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none
-                  ${errors.last_name ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100'}`}
+                  ${errors.last_name ? "border-red-300 bg-red-50" : "border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"}`}
               />
-              {errors.last_name && <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>}
+              {errors.last_name && (
+                <p className="text-red-500 text-xs mt-1">{errors.last_name}</p>
+              )}
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Phone Number</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+              Phone Number
+            </label>
             <input
-              {...field('phone_number')}
+              {...field("phone_number")}
               placeholder="e.g. 628123456789"
               type="tel"
               className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none
-                ${errors.phone_number ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100'}`}
+                ${errors.phone_number ? "border-red-300 bg-red-50" : "border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"}`}
             />
-            <p className="text-gray-400 text-xs mt-1">Nomor hp dengan awalan 0 otomatis diubah menjadi 62</p>
-            {errors.phone_number && <p className="text-red-500 text-xs mt-1">{errors.phone_number}</p>}
+            <p className="text-gray-400 text-xs mt-1">
+              Nomor hp dengan awalan 0 otomatis diubah menjadi 62
+            </p>
+            {errors.phone_number && (
+              <p className="text-red-500 text-xs mt-1">{errors.phone_number}</p>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Category</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Category
+              </label>
               <select
-                {...field('category')}
+                {...field("category")}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none transition-all bg-white"
               >
-                {CATEGORIES.map(c => (
-                  <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                {CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c.charAt(0).toUpperCase() + c.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Pax Allowed</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Pax Allowed
+              </label>
               <input
                 type="number"
-                min={1} max={20}
-                {...field('pax_allowed')}
-                onChange={e => {
-                  setForm(p => ({ ...p, pax_allowed: parseInt(e.target.value) || 1 }));
-                  setErrors(p => ({ ...p, pax_allowed: '' }));
+                min={1}
+                max={20}
+                {...field("pax_allowed")}
+                onChange={(e) => {
+                  setForm((p) => ({
+                    ...p,
+                    pax_allowed: parseInt(e.target.value) || 1,
+                  }));
+                  setErrors((p) => ({ ...p, pax_allowed: "" }));
                 }}
                 className={`w-full px-4 py-2.5 rounded-xl border text-sm transition-all outline-none
-                  ${errors.pax_allowed ? 'border-red-300 bg-red-50' : 'border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100'}`}
+                  ${errors.pax_allowed ? "border-red-300 bg-red-50" : "border-gray-200 focus:border-gray-400 focus:ring-2 focus:ring-gray-100"}`}
               />
-              {errors.pax_allowed && <p className="text-red-500 text-xs mt-1">{errors.pax_allowed}</p>}
+              {errors.pax_allowed && (
+                <p className="text-red-500 text-xs mt-1">
+                  {errors.pax_allowed}
+                </p>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Priority</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Priority
+              </label>
               <select
-                {...field('priority')}
+                {...field("priority")}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none transition-all bg-white"
               >
-                {PRIORITIES.map(p => (
-                  <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">Importance</label>
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Importance
+              </label>
               <select
-                {...field('importance')}
+                {...field("importance")}
                 className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none transition-all bg-white"
               >
-                {IMPORTANCES.map(i => (
-                  <option key={i} value={i}>{i.toUpperCase()}</option>
+                {IMPORTANCES.map((i) => (
+                  <option key={i} value={i}>
+                    {i.toUpperCase()}
+                  </option>
                 ))}
               </select>
             </div>
@@ -346,15 +400,19 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
               Guest Group
-              <span className="ml-1.5 text-gray-300 font-normal normal-case tracking-normal">opsional</span>
+              <span className="ml-1.5 text-gray-300 font-normal normal-case tracking-normal">
+                opsional
+              </span>
             </label>
             <select
-              {...field('guest_group_id')}
+              {...field("guest_group_id")}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none transition-all bg-white"
             >
               <option value="">— Tidak ada group —</option>
-              {(groups || []).map(g => (
-                <option key={g.id} value={g.id}>{g.name}</option>
+              {(groups || []).map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
               ))}
             </select>
           </div>
@@ -363,29 +421,43 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
               Akses Acara
-              <span className="ml-1.5 text-gray-300 font-normal normal-case tracking-normal">override per-tamu</span>
+              <span className="ml-1.5 text-gray-300 font-normal normal-case tracking-normal">
+                override per-tamu
+              </span>
             </label>
             <div className="flex gap-2 flex-wrap">
               {EVENT_ACCESS_OPTIONS.map(({ value, label, icon, hint }) => {
                 // Find group default to show hint
-                const group = (groups || []).find(g => g.id === form.guest_group_id);
-                const groupAccess = group?.default_event_access || 'both';
-                const accessMap = { both: 'HM + Resepsi', hm_only: 'HM Only', resepsi_only: 'Resepsi Only' };
-                const hintLabel = hint ? `Ikut Group (${accessMap[groupAccess] || 'HM + Resepsi'})` : label;
+                const group = (groups || []).find(
+                  (g) => g.id === form.guest_group_id,
+                );
+                const groupAccess = group?.default_event_access || "both";
+                const accessMap = {
+                  both: "HM + Resepsi",
+                  hm_only: "HM Only",
+                  resepsi_only: "Resepsi Only",
+                };
+                const hintLabel = hint
+                  ? `Ikut Group (${accessMap[groupAccess] || "HM + Resepsi"})`
+                  : label;
                 return (
                   <label
                     key={value}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-all select-none
-                      ${form.event_access_override === value
-                        ? 'bg-gray-900 text-white border-gray-900'
-                        : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                      ${
+                        form.event_access_override === value
+                          ? "bg-gray-900 text-white border-gray-900"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                      }`}
                   >
                     <input
                       type="radio"
                       name="event_access_override"
                       value={value}
                       checked={form.event_access_override === value}
-                      onChange={() => setForm(p => ({ ...p, event_access_override: value }))}
+                      onChange={() =>
+                        setForm((p) => ({ ...p, event_access_override: value }))
+                      }
                       className="sr-only"
                     />
                     {icon} {hintLabel}
@@ -397,27 +469,33 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
 
           {/* Invitation Type */}
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">Jenis Undangan</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+              Jenis Undangan
+            </label>
             <div className="flex gap-2 flex-wrap">
               {INVITE_TYPES.map(({ value, label }) => (
                 <label
                   key={value}
                   className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium cursor-pointer transition-all select-none
-                    ${form.invitation_type === value
-                      ? 'bg-gray-900 text-white border-gray-900'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'}`}
+                    ${
+                      form.invitation_type === value
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"
+                    }`}
                 >
                   <input
                     type="radio"
                     name="invitation_type"
                     value={value}
                     checked={form.invitation_type === value}
-                    onChange={() => setForm(p => ({ ...p, invitation_type: value }))}
+                    onChange={() =>
+                      setForm((p) => ({ ...p, invitation_type: value }))
+                    }
                     className="sr-only"
                   />
-                  {value === 'digital' && '📱'}
-                  {value === 'physical' && '✉️'}
-                  {value === 'both' && '📱✉️'}
+                  {value === "digital" && "📱"}
+                  {value === "physical" && "✉️"}
+                  {value === "both" && "📱✉️"}
                   {label}
                 </label>
               ))}
@@ -427,10 +505,12 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
               Notes / Keterangan
-              <span className="ml-1.5 text-gray-300 font-normal normal-case tracking-normal">opsional</span>
+              <span className="ml-1.5 text-gray-300 font-normal normal-case tracking-normal">
+                opsional
+              </span>
             </label>
             <textarea
-              {...field('notes')}
+              {...field("notes")}
               placeholder="e.g. Keluarga dari pihak mempelai wanita, butuh kursi roda..."
               rows={3}
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none transition-all resize-none"
@@ -452,12 +532,28 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
             className="px-5 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm disabled:opacity-60 flex items-center gap-2"
           >
             {saving && (
-              <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <svg
+                className="animate-spin w-4 h-4"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
             )}
-            {saving ? 'Saving…' : initial ? 'Save Changes' : 'Add Guest'}
+            {saving ? "Saving…" : initial ? "Save Changes" : "Add Guest"}
           </button>
         </div>
       </div>
@@ -468,14 +564,16 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
 // ─── Category Badge ───────────────────────────────────────────────────────────
 function CategoryBadge({ value }) {
   const map = {
-    family: 'bg-purple-50 text-purple-600 border-purple-100',
-    colleague: 'bg-blue-50 text-blue-600 border-blue-100',
-    friend: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+    family: "bg-purple-50 text-purple-600 border-purple-100",
+    colleague: "bg-blue-50 text-blue-600 border-blue-100",
+    friend: "bg-emerald-50 text-emerald-600 border-emerald-100",
   };
   const cls = map[value] || map.friend;
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${cls}`}>
-      {value || 'Friend'}
+    <span
+      className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${cls}`}
+    >
+      {value || "Friend"}
     </span>
   );
 }
@@ -483,15 +581,17 @@ function CategoryBadge({ value }) {
 // ─── Priority Badge ───────────────────────────────────────────────────────────
 function PriorityBadge({ value }) {
   const map = {
-    high: { cls: 'bg-red-50 text-red-600 border-red-100', icon: '↑' },
-    medium: { cls: 'bg-amber-50 text-amber-600 border-amber-100', icon: '→' },
-    low: { cls: 'bg-gray-50 text-gray-500 border-gray-200', icon: '↓' },
+    high: { cls: "bg-red-50 text-red-600 border-red-100", icon: "↑" },
+    medium: { cls: "bg-amber-50 text-amber-600 border-amber-100", icon: "→" },
+    low: { cls: "bg-gray-50 text-gray-500 border-gray-200", icon: "↓" },
   };
   const { cls, icon } = map[value] || map.medium;
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${cls}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${cls}`}
+    >
       <span className="text-[10px] leading-none">{icon}</span>
-      {value || 'Medium'}
+      {value || "Medium"}
     </span>
   );
 }
@@ -499,14 +599,16 @@ function PriorityBadge({ value }) {
 // ─── Importance Badge ─────────────────────────────────────────────────────────
 function ImportanceBadge({ value }) {
   const map = {
-    vvip: 'bg-yellow-50 text-yellow-700 border-yellow-200',
-    vip: 'bg-orange-50 text-orange-600 border-orange-100',
-    normal: 'bg-gray-50 text-gray-500 border-gray-200',
+    vvip: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    vip: "bg-orange-50 text-orange-600 border-orange-100",
+    normal: "bg-gray-50 text-gray-500 border-gray-200",
   };
   const cls = map[value] || map.normal;
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${cls}`}>
-      {value || 'Normal'}
+    <span
+      className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${cls}`}
+    >
+      {value || "Normal"}
     </span>
   );
 }
@@ -514,13 +616,24 @@ function ImportanceBadge({ value }) {
 // ─── Invitation Type Badge ────────────────────────────────────────────────────
 function InvitationTypeBadge({ value }) {
   const map = {
-    digital: { cls: 'bg-blue-50 text-blue-600 border-blue-100', label: '📱 Digital' },
-    physical: { cls: 'bg-amber-50 text-amber-600 border-amber-100', label: '✉️ Fisik' },
-    both: { cls: 'bg-purple-50 text-purple-600 border-purple-100', label: '📱✉️ Both' },
+    digital: {
+      cls: "bg-blue-50 text-blue-600 border-blue-100",
+      label: "📱 Digital",
+    },
+    physical: {
+      cls: "bg-amber-50 text-amber-600 border-amber-100",
+      label: "✉️ Fisik",
+    },
+    both: {
+      cls: "bg-purple-50 text-purple-600 border-purple-100",
+      label: "📱✉️ Both",
+    },
   };
   const { cls, label } = map[value] || map.digital;
   return (
-    <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}>
+    <span
+      className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}
+    >
       {label}
     </span>
   );
@@ -529,51 +642,84 @@ function InvitationTypeBadge({ value }) {
 // ─── Event Access Badge ──────────────────────────────────────────────────────
 function EventAccessBadge({ access, isOverride = false }) {
   const map = {
-    both:         { cls: 'bg-indigo-50 text-indigo-600 border-indigo-100', label: 'HM + Resepsi', icon: '🎊' },
-    hm_only:      { cls: 'bg-sky-50 text-sky-600 border-sky-100',         label: 'HM Only',      icon: '⛪' },
-    resepsi_only: { cls: 'bg-rose-50 text-rose-600 border-rose-100',       label: 'Resepsi Only', icon: '🥂' },
+    both: {
+      cls: "bg-indigo-50 text-indigo-600 border-indigo-100",
+      label: "HM + Resepsi",
+      icon: "🎊",
+    },
+    hm_only: {
+      cls: "bg-sky-50 text-sky-600 border-sky-100",
+      label: "HM Only",
+      icon: "⛪",
+    },
+    resepsi_only: {
+      cls: "bg-rose-50 text-rose-600 border-rose-100",
+      label: "Resepsi Only",
+      icon: "🥂",
+    },
   };
   const { cls, label, icon } = map[access] || map.both;
   return (
-    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}>
+    <span
+      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}
+    >
       {icon} {label}
-      {isOverride && <span className="opacity-60 text-[9px] ml-0.5">override</span>}
+      {isOverride && (
+        <span className="opacity-60 text-[9px] ml-0.5">override</span>
+      )}
     </span>
   );
 }
 
 // ─── Export CSV ───────────────────────────────────────────────────────────────
 function exportCSV(guests) {
-  const header = ['Name', 'Slug', 'Phone', 'Category', 'Pax', 'Priority', 'Importance', 'Notes'];
-  const rows = guests.map(g => [
-    `"${g.display_name || ''}"`,
-    g.slug || '',
-    g.phone_number || '',
-    g.category || 'friend',
+  const header = [
+    "Name",
+    "Slug",
+    "Phone",
+    "Category",
+    "Pax",
+    "Priority",
+    "Importance",
+    "Notes",
+  ];
+  const rows = guests.map((g) => [
+    `"${g.display_name || ""}"`,
+    g.slug || "",
+    g.phone_number || "",
+    g.category || "friend",
     g.pax_allowed || 1,
-    g.priority || 'medium',
-    g.importance || 'normal',
-    `"${(g.notes || '').replace(/"/g, '""')}"`,
+    g.priority || "medium",
+    g.importance || "normal",
+    `"${(g.notes || "").replace(/"/g, '""')}"`,
   ]);
-  const csv = [header, ...rows].map(r => r.join(',')).join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
+  const csv = [header, ...rows].map((r) => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'guests.csv'; a.click();
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "guests.csv";
+  a.click();
   URL.revokeObjectURL(url);
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
-const EMPTY_FILTERS = { category: '', priority: '', importance: '', guest_group_id: '', invitation_type: '' };
+const EMPTY_FILTERS = {
+  category: "",
+  priority: "",
+  importance: "",
+  guest_group_id: "",
+  invitation_type: "",
+};
 
 export const AdminGuests = () => {
   const [guests, setGuests] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [groups, setGroups] = useState([]);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -591,72 +737,99 @@ export const AdminGuests = () => {
   const [confirm, setConfirm] = useState({ open: false });
 
   // WA template from settings
-  const [waTemplate, setWaTemplate] = useState('');
+  const [waTemplate, setWaTemplate] = useState("");
 
   const { toasts, push } = useToast();
 
   const user = authService.getAdminUser();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === "admin" || user?.role === "parents";
 
   // ── Load groups + WA template once ──
   useEffect(() => {
-    GroupAPI.list().then(r => setGroups(r.groups || [])).catch(() => { });
-    API.getSettings().then(r => {
-      // Expected settings key: wa_invite_template
-      // Supports placeholders: {name}, {link}
-      setWaTemplate(r.settings?.wa_invite_template || '');
-    }).catch(() => { });
+    GroupAPI.list()
+      .then((r) => setGroups(r.groups || []))
+      .catch(() => {});
+    API.getSettings()
+      .then((r) => {
+        // Expected settings key: wa_invite_template
+        // Supports placeholders: {name}, {link}
+        setWaTemplate(r.settings?.wa_invite_template || "");
+      })
+      .catch(() => {});
   }, []);
 
   // ── Debounced search ──
   useEffect(() => {
     const t = setTimeout(() => {
-      if (search !== searchInput) { setSearch(searchInput); setPage(1); }
+      if (search !== searchInput) {
+        setSearch(searchInput);
+        setPage(1);
+      }
     }, 500);
     return () => clearTimeout(t);
   }, [searchInput, search]);
 
   // ── Fetch ──
   const fetchGuests = useCallback(async () => {
-    setLoading(true); setError('');
+    setLoading(true);
+    setError("");
     try {
       const result = await API.list(page, limit, search, showDeleted, filters);
       setGuests(result.data || []);
       setTotal(result.total || 0);
     } catch (err) {
-      setError(err.message || 'Failed to load guests');
+      setError(err.message || "Failed to load guests");
     } finally {
       setLoading(false);
     }
   }, [page, search, showDeleted, filters]);
 
-  useEffect(() => { fetchGuests(); }, [fetchGuests]);
+  useEffect(() => {
+    fetchGuests();
+  }, [fetchGuests]);
 
   // ── Clear selection when page/search/showDeleted/filters changes ──
-  useEffect(() => { setSelected(new Set()); }, [page, search, showDeleted, filters]);
+  useEffect(() => {
+    setSelected(new Set());
+  }, [page, search, showDeleted, filters]);
 
   const setFilter = (key, val) => {
-    setFilters(prev => ({ ...prev, [key]: val }));
+    setFilters((prev) => ({ ...prev, [key]: val }));
     setPage(1);
   };
-  const clearFilters = () => { setFilters(EMPTY_FILTERS); setPage(1); };
+  const clearFilters = () => {
+    setFilters(EMPTY_FILTERS);
+    setPage(1);
+  };
   const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const totalPages = Math.ceil(total / limit);
 
   // ── Handlers ──
-  const openCreate = () => { setEditGuest(null); setModalOpen(true); };
-  const openEdit = (g) => { setEditGuest(g); setModalOpen(true); };
+  const openCreate = () => {
+    setEditGuest(null);
+    setModalOpen(true);
+  };
+  const openEdit = (g) => {
+    setEditGuest(g);
+    setModalOpen(true);
+  };
 
   const handleSave = async (form) => {
     if (editGuest) {
       const updated = await API.update(editGuest.id, form);
-      if (updated.error) { push(updated.error, 'error'); return; }
-      push('Guest updated successfully', 'success');
+      if (updated.error) {
+        push(updated.error, "error");
+        return;
+      }
+      push("Guest updated successfully", "success");
     } else {
       const created = await API.create(form);
-      if (created.error) { push(created.error, 'error'); return; }
-      push('Guest added successfully', 'success');
+      if (created.error) {
+        push(created.error, "error");
+        return;
+      }
+      push("Guest added successfully", "success");
     }
     invalidateGuestCache(editGuest?.slug);
     fetchGuests();
@@ -665,14 +838,37 @@ export const AdminGuests = () => {
   const handleDelete = (id, name) => {
     setConfirm({
       open: true,
-      title: 'Delete Guest',
+      title: "Delete Guest",
       message: `Are you sure you want to remove "${name}"? This cannot be undone.`,
       danger: true,
       onConfirm: async () => {
         setConfirm({ open: false });
         const res = await API.remove(id);
-        if (!res.ok && res.status !== 204) { push('Failed to delete guest', 'error'); return; }
-        push('Guest deleted', 'success');
+        if (res.error) {
+          push("Failed to delete guest", "error");
+          return;
+        }
+        push("Guest deleted", "success");
+        invalidateGuestCache();
+        fetchGuests();
+      },
+    });
+  };
+
+  const handleRestore = (id, name) => {
+    setConfirm({
+      open: true,
+      title: "Restore Guest",
+      message: `Are you sure you want to restore "${name}"?`,
+      danger: false,
+      onConfirm: async () => {
+        setConfirm({ open: false });
+        const res = await API.restore(id);
+        if (res.error) {
+          push("Failed to restore guest", "error");
+          return;
+        }
+        push("Guest restored", "success");
         invalidateGuestCache();
         fetchGuests();
       },
@@ -683,13 +879,13 @@ export const AdminGuests = () => {
     if (!selected.size) return;
     setConfirm({
       open: true,
-      title: `Delete ${selected.size} Guest${selected.size > 1 ? 's' : ''}`,
-      message: `This will permanently delete ${selected.size} selected guest${selected.size > 1 ? 's' : ''}. This cannot be undone.`,
+      title: `Delete ${selected.size} Guest${selected.size > 1 ? "s" : ""}`,
+      message: `This will permanently delete ${selected.size} selected guest${selected.size > 1 ? "s" : ""}. This cannot be undone.`,
       danger: true,
       onConfirm: async () => {
         setConfirm({ open: false });
-        await Promise.all([...selected].map(id => API.remove(id)));
-        push(`${selected.size} guests deleted`, 'success');
+        await Promise.all([...selected].map((id) => API.remove(id)));
+        push(`${selected.size} guests deleted`, "success");
         setSelected(new Set());
         invalidateGuestCache();
         fetchGuests();
@@ -699,49 +895,80 @@ export const AdminGuests = () => {
 
   const copyLink = (slug) => {
     const url = `${window.location.origin}/invite/${slug}`;
-    navigator.clipboard.writeText(url).then(() => push('Invitation link copied!', 'info'));
+    navigator.clipboard
+      .writeText(url)
+      .then(() => push("Invitation link copied!", "info"));
   };
 
   // Build WA URL — replaces {name} and {link} in the template from settings
   const openWhatsApp = (guest) => {
-    const phone = guest.phone_number?.replace(/\D/g, '');
-    if (!phone) { push('Nomor HP tidak tersedia', 'error'); return; }
+    const phone = guest.phone_number?.replace(/\D/g, "");
+    if (!phone) {
+      push("Nomor HP tidak tersedia", "error");
+      return;
+    }
     const inviteLink = `${window.location.origin}/invite/${guest.slug}`;
-    const name = guest.display_name || guest.first_name || '';
+    const name = guest.display_name || guest.first_name || "";
     const message = waTemplate
       ? waTemplate.replace(/\{name\}/gi, name).replace(/\{link\}/gi, inviteLink)
       : `Halo ${name}, berikut link undangan pernikahan kami: ${inviteLink}`;
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-    window.open(waUrl, '_blank', 'noopener,noreferrer');
+    window.open(waUrl, "_blank", "noopener,noreferrer");
   };
 
   // Mark / unmark invite sent — optimistic update + persist
   const handleMarkInvited = async (guest) => {
-    const newStatus = guest.invite_status === 'sent' ? 'pending' : 'sent';
+    const newStatus = guest.invite_status === "sent" ? "pending" : "sent";
     // Optimistic update
-    setGuests(prev => prev.map(g => g.id === guest.id ? { ...g, invite_status: newStatus } : g));
+    setGuests((prev) =>
+      prev.map((g) =>
+        g.id === guest.id ? { ...g, invite_status: newStatus } : g,
+      ),
+    );
     const res = await API.markInvited(guest.id, newStatus);
     if (res.error) {
       // Revert on failure
-      setGuests(prev => prev.map(g => g.id === guest.id ? { ...g, invite_status: guest.invite_status } : g));
-      push('Gagal update status undangan', 'error');
+      setGuests((prev) =>
+        prev.map((g) =>
+          g.id === guest.id ? { ...g, invite_status: guest.invite_status } : g,
+        ),
+      );
+      push("Gagal update status undangan", "error");
     } else {
-      push(newStatus === 'sent' ? '✓ Ditandai sudah diundang' : 'Dikembalikan ke pending', 'success');
+      push(
+        newStatus === "sent"
+          ? "✓ Ditandai sudah diundang"
+          : "Dikembalikan ke pending",
+        "success",
+      );
       invalidateGuestCache(guest.slug);
     }
   };
 
   // ── Select all (current page) ──
-  const allSelected = guests.length > 0 && guests.every(g => selected.has(g.id));
+  const allSelected =
+    guests.length > 0 && guests.every((g) => selected.has(g.id));
   const toggleAll = () => {
     if (allSelected) {
-      setSelected(prev => { const s = new Set(prev); guests.forEach(g => s.delete(g.id)); return s; });
+      setSelected((prev) => {
+        const s = new Set(prev);
+        guests.forEach((g) => s.delete(g.id));
+        return s;
+      });
     } else {
-      setSelected(prev => { const s = new Set(prev); guests.forEach(g => s.add(g.id)); return s; });
+      setSelected((prev) => {
+        const s = new Set(prev);
+        guests.forEach((g) => s.add(g.id));
+        return s;
+      });
     }
   };
   const toggleOne = (id) => {
-    setSelected(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setSelected((prev) => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
   };
 
   return (
@@ -762,57 +989,101 @@ export const AdminGuests = () => {
       />
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-
         {/* ── Header ── */}
         <div className="p-8 border-b border-gray-100">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Guests</h1>
               <p className="text-gray-400 text-sm mt-0.5">
-                {total} tamu{activeFilterCount > 0 ? ` · ${activeFilterCount} filter aktif` : ''}{showDeleted ? ' · menampilkan yang dihapus' : ''}
+                {total} tamu
+                {activeFilterCount > 0
+                  ? ` · ${activeFilterCount} filter aktif`
+                  : ""}
+                {showDeleted ? " · menampilkan yang dihapus" : ""}
               </p>
             </div>
 
             <div className="flex items-center gap-2 flex-wrap">
               {/* Search */}
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
                 </svg>
                 <input
                   type="text"
                   placeholder="Search guests…"
                   value={searchInput}
-                  onChange={e => setSearchInput(e.target.value)}
+                  onChange={(e) => setSearchInput(e.target.value)}
                   className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-200 focus:border-gray-300 outline-none transition-all w-52"
                 />
               </div>
 
               {/* Show Deleted Toggle */}
               <button
-                onClick={() => { setShowDeleted(v => !v); setPage(1); }}
+                onClick={() => {
+                  setShowDeleted((v) => !v);
+                  setPage(1);
+                }}
                 className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-sm font-semibold transition-all
-                  ${showDeleted
-                    ? 'bg-red-50 border-red-200 text-red-600'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                title={showDeleted ? 'Showing deleted guests — click to show active' : 'Show deleted guests'}
+                  ${
+                    showDeleted
+                      ? "bg-red-50 border-red-200 text-red-600"
+                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
+                title={
+                  showDeleted
+                    ? "Showing deleted guests — click to show active"
+                    : "Show deleted guests"
+                }
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
-                {showDeleted ? 'Deleted' : 'Active'}
+                {showDeleted ? "Deleted" : "Active"}
               </button>
 
               {/* Filter Toggle */}
               <button
-                onClick={() => setShowFilters(v => !v)}
+                onClick={() => setShowFilters((v) => !v)}
                 className={`flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl border text-sm font-semibold transition-all
-                  ${showFilters || activeFilterCount > 0
-                    ? 'bg-gray-900 border-gray-900 text-white'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                  ${
+                    showFilters || activeFilterCount > 0
+                      ? "bg-gray-900 border-gray-900 text-white"
+                      : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                  }`}
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
+                  />
                 </svg>
                 Filter
                 {activeFilterCount > 0 && (
@@ -828,8 +1099,18 @@ export const AdminGuests = () => {
                 title="Export current page to CSV"
                 className="flex items-center gap-1.5 px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
                 </svg>
                 CSV
               </button>
@@ -840,8 +1121,18 @@ export const AdminGuests = () => {
                   onClick={handleBulkDelete}
                   className="flex items-center gap-1.5 px-3.5 py-2.5 bg-red-50 border border-red-100 rounded-xl text-sm font-semibold text-red-600 hover:bg-red-100 transition-all"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                   Delete {selected.size}
                 </button>
@@ -853,8 +1144,18 @@ export const AdminGuests = () => {
                   onClick={openCreate}
                   className="flex items-center gap-1.5 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 4v16m8-8H4"
+                    />
                   </svg>
                   Add Guest
                 </button>
@@ -864,75 +1165,94 @@ export const AdminGuests = () => {
         </div>
 
         {/* ── Filter Bar ── */}
-        <div className={`border-b border-gray-100 overflow-hidden transition-all duration-200 ${showFilters ? 'max-h-[500px]' : 'max-h-0'}`}>
+        <div
+          className={`border-b border-gray-100 overflow-hidden transition-all duration-200 ${showFilters ? "max-h-[500px]" : "max-h-0"}`}
+        >
           <div className="px-6 md:px-8 py-4 flex flex-wrap gap-3 items-end bg-gray-50/50">
-
             {/* Category */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Category</label>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                Category
+              </label>
               <select
                 value={filters.category}
-                onChange={e => setFilter('category', e.target.value)}
+                onChange={(e) => setFilter("category", e.target.value)}
                 className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
               >
                 <option value="">Semua</option>
-                {['friend', 'family', 'colleague'].map(c => (
-                  <option key={c} value={c}>{c.charAt(0).toUpperCase() + c.slice(1)}</option>
+                {["friend", "family", "colleague"].map((c) => (
+                  <option key={c} value={c}>
+                    {c.charAt(0).toUpperCase() + c.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Priority */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Priority</label>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                Priority
+              </label>
               <select
                 value={filters.priority}
-                onChange={e => setFilter('priority', e.target.value)}
+                onChange={(e) => setFilter("priority", e.target.value)}
                 className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
               >
                 <option value="">Semua</option>
-                {['low', 'medium', 'high'].map(p => (
-                  <option key={p} value={p}>{p.charAt(0).toUpperCase() + p.slice(1)}</option>
+                {["low", "medium", "high"].map((p) => (
+                  <option key={p} value={p}>
+                    {p.charAt(0).toUpperCase() + p.slice(1)}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Importance */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Importance</label>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                Importance
+              </label>
               <select
                 value={filters.importance}
-                onChange={e => setFilter('importance', e.target.value)}
+                onChange={(e) => setFilter("importance", e.target.value)}
                 className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
               >
                 <option value="">Semua</option>
-                {['normal', 'vip', 'vvip'].map(i => (
-                  <option key={i} value={i}>{i.toUpperCase()}</option>
+                {["normal", "vip", "vvip"].map((i) => (
+                  <option key={i} value={i}>
+                    {i.toUpperCase()}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Guest Group */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Group</label>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                Group
+              </label>
               <select
                 value={filters.guest_group_id}
-                onChange={e => setFilter('guest_group_id', e.target.value)}
+                onChange={(e) => setFilter("guest_group_id", e.target.value)}
                 className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all max-w-[180px]"
               >
                 <option value="">Semua Group</option>
-                {groups.map(g => (
-                  <option key={g.id} value={g.id}>{g.name}</option>
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Invitation Type */}
             <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Jenis Undangan</label>
+              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                Jenis Undangan
+              </label>
               <select
                 value={filters.invitation_type}
-                onChange={e => setFilter('invitation_type', e.target.value)}
+                onChange={(e) => setFilter("invitation_type", e.target.value)}
                 className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
               >
                 <option value="">Semua</option>
@@ -948,8 +1268,18 @@ export const AdminGuests = () => {
                 onClick={clearFilters}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-all self-end"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
                 Reset filter
               </button>
@@ -978,27 +1308,68 @@ export const AdminGuests = () => {
                       className="w-4 h-4 rounded border-gray-300 accent-gray-900 cursor-pointer"
                     />
                   </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Name</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Phone</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Group</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Category</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Priority</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Importance</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">Pax</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Undangan</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Akses Acara</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">Notes</th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">{isAdmin ? 'Actions' : 'Links'}</th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Phone
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Group
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Priority
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Importance
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">
+                    Pax
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Undangan
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Akses Acara
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
+                    Notes
+                  </th>
+                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">
+                    Actions
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan="11" className="py-14 text-center text-gray-400">
+                    <td
+                      colSpan="11"
+                      className="py-14 text-center text-gray-400"
+                    >
                       <span className="inline-flex items-center gap-2">
-                        <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        <svg
+                          className="animate-spin w-4 h-4"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
                         </svg>
                         Loading guests…
                       </span>
@@ -1006,16 +1377,34 @@ export const AdminGuests = () => {
                   </tr>
                 ) : guests.length === 0 ? (
                   <tr>
-                    <td colSpan="11" className="py-14 text-center text-gray-400">
+                    <td
+                      colSpan="11"
+                      className="py-14 text-center text-gray-400"
+                    >
                       <div className="flex flex-col items-center gap-3">
-                        <svg className="w-10 h-10 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <svg
+                          className="w-10 h-10 text-gray-200"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="1.5"
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
                         </svg>
                         <span className="text-sm">
-                          {search ? `No guests found for "${search}"` : 'No guests yet. Add your first one!'}
+                          {search
+                            ? `No guests found for "${search}"`
+                            : "No guests yet. Add your first one!"}
                         </span>
                         {!search && (
-                          <button onClick={openCreate} className="mt-1 text-sm font-semibold text-gray-900 underline underline-offset-2 hover:no-underline transition-all">
+                          <button
+                            onClick={openCreate}
+                            className="mt-1 text-sm font-semibold text-gray-900 underline underline-offset-2 hover:no-underline transition-all"
+                          >
                             Add Guest →
                           </button>
                         )}
@@ -1024,13 +1413,15 @@ export const AdminGuests = () => {
                   </tr>
                 ) : (
                   guests.map((guest) => {
-                    const groupName = groups.find(g => g.id === guest.guest_group_id)?.name;
+                    const groupName = groups.find(
+                      (g) => g.id === guest.guest_group_id,
+                    )?.name;
                     const isDeleted = !!guest.deleted_at;
                     return (
                       <tr
                         key={guest.id}
                         className={`border-b border-gray-50 transition-colors group
-                        ${isDeleted ? 'bg-red-50/40 opacity-60' : selected.has(guest.id) ? 'bg-gray-50' : 'hover:bg-gray-50/60'}`}
+                        ${isDeleted ? "bg-red-50/40 opacity-60" : selected.has(guest.id) ? "bg-gray-50" : "hover:bg-gray-50/60"}`}
                       >
                         {/* Checkbox */}
                         <td className="py-3.5 px-4">
@@ -1051,25 +1442,33 @@ export const AdminGuests = () => {
                                 deleted
                               </span>
                             )}
-                            {!isDeleted && guest.invite_status === 'sent' && (
+                            {!isDeleted && guest.invite_status === "sent" && (
                               <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-200">
                                 ✓ sent
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-400 mt-0.5 font-mono">{guest.slug}</div>
+                          <div className="text-xs text-gray-400 mt-0.5 font-mono">
+                            {guest.slug}
+                          </div>
                         </td>
 
                         {/* Phone */}
                         <td className="py-3.5 px-4 text-gray-500 whitespace-nowrap">
-                          {guest.phone_number || <span className="text-gray-300">—</span>}
+                          {guest.phone_number || (
+                            <span className="text-gray-300">—</span>
+                          )}
                         </td>
 
                         {/* Group */}
                         <td className="py-3.5 px-4">
-                          {groupName
-                            ? <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100">{groupName}</span>
-                            : <span className="text-gray-300">—</span>}
+                          {groupName ? (
+                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100">
+                              {groupName}
+                            </span>
+                          ) : (
+                            <span className="text-gray-300">—</span>
+                          )}
                         </td>
 
                         {/* Category */}
@@ -1102,16 +1501,23 @@ export const AdminGuests = () => {
                         {/* Akses Acara */}
                         <td className="py-3.5 px-4">
                           <EventAccessBadge
-                            access={guest.resolved_event_access || 'both'}
+                            access={guest.resolved_event_access || "both"}
                             isOverride={!!guest.event_access_override}
                           />
                         </td>
 
                         {/* Notes */}
                         <td className="py-3.5 px-4 max-w-[150px]">
-                          {guest.notes
-                            ? <div className="text-xs text-gray-500 line-clamp-1 truncate" title={guest.notes}>{guest.notes}</div>
-                            : <span className="text-gray-200">—</span>}
+                          {guest.notes ? (
+                            <div
+                              className="text-xs text-gray-500 line-clamp-1 truncate"
+                              title={guest.notes}
+                            >
+                              {guest.notes}
+                            </div>
+                          ) : (
+                            <span className="text-gray-200">—</span>
+                          )}
                         </td>
 
                         {/* Actions */}
@@ -1120,12 +1526,24 @@ export const AdminGuests = () => {
                             {isDeleted ? (
                               isAdmin && (
                                 <button
-                                  onClick={() => handleRestore(guest.id, guest.display_name)}
+                                  onClick={() =>
+                                    handleRestore(guest.id, guest.display_name)
+                                  }
                                   title="Restore guest"
                                   className="p-1.5 rounded-lg hover:bg-emerald-50 text-gray-400 hover:text-emerald-600 transition-all"
                                 >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                                    />
                                   </svg>
                                 </button>
                               )
@@ -1137,7 +1555,11 @@ export const AdminGuests = () => {
                                   title="Kirim undangan via WhatsApp"
                                   className="p-1.5 rounded-lg hover:bg-green-50 text-gray-400 hover:text-green-600 transition-all"
                                 >
-                                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                                  <svg
+                                    className="w-4 h-4"
+                                    viewBox="0 0 24 24"
+                                    fill="currentColor"
+                                  >
                                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
                                     <path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.554 4.11 1.523 5.837L.057 23.882a.5.5 0 00.61.61l6.045-1.466A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.497-5.27-1.394l-.38-.22-3.933.954.97-3.934-.24-.392A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
                                   </svg>
@@ -1146,14 +1568,29 @@ export const AdminGuests = () => {
                                 {/* Mark as invited / undo */}
                                 <button
                                   onClick={() => handleMarkInvited(guest)}
-                                  title={guest.invite_status === 'sent' ? 'Tandai belum diundang' : 'Tandai sudah diundang'}
-                                  className={`p-1.5 rounded-lg transition-all ${guest.invite_status === 'sent'
-                                      ? 'hover:bg-amber-50 text-emerald-500 hover:text-amber-500'
-                                      : 'hover:bg-emerald-50 text-gray-400 hover:text-emerald-600'
-                                    }`}
+                                  title={
+                                    guest.invite_status === "sent"
+                                      ? "Tandai belum diundang"
+                                      : "Tandai sudah diundang"
+                                  }
+                                  className={`p-1.5 rounded-lg transition-all ${
+                                    guest.invite_status === "sent"
+                                      ? "hover:bg-amber-50 text-emerald-500 hover:text-amber-500"
+                                      : "hover:bg-emerald-50 text-gray-400 hover:text-emerald-600"
+                                  }`}
                                 >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                    />
                                   </svg>
                                 </button>
 
@@ -1163,8 +1600,18 @@ export const AdminGuests = () => {
                                   title="Copy invitation link"
                                   className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all"
                                 >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                    />
                                   </svg>
                                 </button>
 
@@ -1176,8 +1623,18 @@ export const AdminGuests = () => {
                                   title="Preview invitation"
                                   className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all"
                                 >
-                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                  <svg
+                                    className="w-4 h-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                                    />
                                   </svg>
                                 </a>
 
@@ -1188,8 +1645,18 @@ export const AdminGuests = () => {
                                     title="Edit guest"
                                     className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all"
                                   >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                      />
                                     </svg>
                                   </button>
                                 )}
@@ -1197,12 +1664,24 @@ export const AdminGuests = () => {
                                 {/* Delete (Admin Only) */}
                                 {isAdmin && (
                                   <button
-                                    onClick={() => handleDelete(guest.id, guest.display_name)}
+                                    onClick={() =>
+                                      handleDelete(guest.id, guest.display_name)
+                                    }
                                     title="Delete guest"
                                     className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
                                   >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    <svg
+                                      className="w-4 h-4"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                      />
                                     </svg>
                                   </button>
                                 )}
@@ -1221,12 +1700,18 @@ export const AdminGuests = () => {
           {/* ── Mobile Card List ── */}
           <div className="md:hidden space-y-4 px-4 pb-4">
             {loading ? (
-              <div className="py-10 text-center text-gray-400">Loading guests...</div>
+              <div className="py-10 text-center text-gray-400">
+                Loading guests...
+              </div>
             ) : guests.length === 0 ? (
-              <div className="py-10 text-center text-gray-400">No guests found.</div>
+              <div className="py-10 text-center text-gray-400">
+                No guests found.
+              </div>
             ) : (
               guests.map((guest) => {
-                const groupName = groups.find(g => g.id === guest.guest_group_id)?.name;
+                const groupName = groups.find(
+                  (g) => g.id === guest.guest_group_id,
+                )?.name;
                 const isDeleted = !!guest.deleted_at;
                 const isSelected = selected.has(guest.id);
 
@@ -1234,7 +1719,7 @@ export const AdminGuests = () => {
                   <div
                     key={guest.id}
                     className={`p-5 rounded-2xl border transition-all active:scale-[0.98]
-                      ${isDeleted ? 'bg-red-50/40 border-red-100 opacity-60' : isSelected ? 'bg-gray-50 border-gray-300' : 'bg-white border-gray-100 shadow-sm'}`}
+                      ${isDeleted ? "bg-red-50/40 border-red-100 opacity-60" : isSelected ? "bg-gray-50 border-gray-300" : "bg-white border-gray-100 shadow-sm"}`}
                     onClick={() => toggleOne(guest.id)}
                   >
                     <div className="flex justify-between items-start mb-3">
@@ -1242,15 +1727,24 @@ export const AdminGuests = () => {
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={(e) => { e.stopPropagation(); toggleOne(guest.id); }}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleOne(guest.id);
+                          }}
                           className="w-5 h-5 rounded-lg border-gray-300 accent-gray-900 cursor-pointer"
                         />
                         <div>
                           <h3 className="font-bold text-gray-900 flex items-center gap-2">
                             {guest.display_name}
-                            {isDeleted && <span className="text-[10px] text-red-500 font-bold uppercase">deleted</span>}
+                            {isDeleted && (
+                              <span className="text-[10px] text-red-500 font-bold uppercase">
+                                deleted
+                              </span>
+                            )}
                           </h3>
-                          <p className="text-xs text-gray-400 font-mono tracking-wider">{guest.slug}</p>
+                          <p className="text-xs text-gray-400 font-mono tracking-wider">
+                            {guest.slug}
+                          </p>
                         </div>
                       </div>
                       <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 text-xs font-black border border-gray-200">
@@ -1260,12 +1754,20 @@ export const AdminGuests = () => {
 
                     <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm mb-4">
                       <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Phone</p>
-                        <p className="text-gray-700 font-medium">{guest.phone_number || '—'}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                          Phone
+                        </p>
+                        <p className="text-gray-700 font-medium">
+                          {guest.phone_number || "—"}
+                        </p>
                       </div>
                       <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Group</p>
-                        <p className="text-gray-700 truncate font-medium">{groupName || '—'}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+                          Group
+                        </p>
+                        <p className="text-gray-700 truncate font-medium">
+                          {groupName || "—"}
+                        </p>
                       </div>
                       <div className="col-span-2 flex flex-wrap gap-2">
                         <CategoryBadge value={guest.category} />
@@ -1273,7 +1775,7 @@ export const AdminGuests = () => {
                         <ImportanceBadge value={guest.importance} />
                         <InvitationTypeBadge value={guest.invitation_type} />
                         <EventAccessBadge
-                          access={guest.resolved_event_access || 'both'}
+                          access={guest.resolved_event_access || "both"}
                           isOverride={!!guest.event_access_override}
                         />
                       </div>
@@ -1285,10 +1787,18 @@ export const AdminGuests = () => {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-50" onClick={e => e.stopPropagation()}>
+                    <div
+                      className="flex items-center justify-end gap-2 pt-3 border-t border-gray-50"
+                      onClick={(e) => e.stopPropagation()}
+                    >
                       {isDeleted ? (
                         isAdmin && (
-                          <button onClick={() => handleRestore(guest.id, guest.display_name)} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100">
+                          <button
+                            onClick={() =>
+                              handleRestore(guest.id, guest.display_name)
+                            }
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100"
+                          >
                             Restore Guest
                           </button>
                         )
@@ -1300,30 +1810,98 @@ export const AdminGuests = () => {
                             title="Kirim via WhatsApp"
                             className="p-2.5 bg-green-50 text-green-600 rounded-xl border border-green-100"
                           >
-                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" /><path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.554 4.11 1.523 5.837L.057 23.882a.5.5 0 00.61.61l6.045-1.466A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.497-5.27-1.394l-.38-.22-3.933.954.97-3.934-.24-.392A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
+                            <svg
+                              className="w-4 h-4"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
+                              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+                              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.554 4.11 1.523 5.837L.057 23.882a.5.5 0 00.61.61l6.045-1.466A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.497-5.27-1.394l-.38-.22-3.933.954.97-3.934-.24-.392A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
                             </svg>
                           </button>
                           {/* Mark invited */}
                           <button
                             onClick={() => handleMarkInvited(guest)}
-                            title={guest.invite_status === 'sent' ? 'Undo sent' : 'Tandai sudah diundang'}
-                            className={`p-2.5 rounded-xl border ${guest.invite_status === 'sent' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-gray-50 text-gray-400 border-gray-200'}`}
+                            title={
+                              guest.invite_status === "sent"
+                                ? "Undo sent"
+                                : "Tandai sudah diundang"
+                            }
+                            className={`p-2.5 rounded-xl border ${guest.invite_status === "sent" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-50 text-gray-400 border-gray-200"}`}
                           >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
                             </svg>
                           </button>
-                          <a href={`/invite/${guest.slug}`} target="_blank" rel="noopener noreferrer" className="p-2.5 bg-gray-50 text-gray-700 rounded-xl border border-gray-200">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                          <a
+                            href={`/invite/${guest.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2.5 bg-gray-50 text-gray-700 rounded-xl border border-gray-200"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
+                            </svg>
                           </a>
                           {isAdmin && (
                             <>
-                              <button onClick={() => openEdit(guest)} className="p-2.5 bg-gray-50 text-gray-600 rounded-xl border border-gray-200">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                              <button
+                                onClick={() => openEdit(guest)}
+                                className="p-2.5 bg-gray-50 text-gray-600 rounded-xl border border-gray-200"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
                               </button>
-                              <button onClick={() => handleDelete(guest.id, guest.display_name)} className="p-2.5 bg-red-50 text-red-500 rounded-xl border border-red-100">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                              <button
+                                onClick={() =>
+                                  handleDelete(guest.id, guest.display_name)
+                                }
+                                className="p-2.5 bg-red-50 text-red-500 rounded-xl border border-red-100"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
+                                </svg>
                               </button>
                             </>
                           )}
@@ -1340,12 +1918,16 @@ export const AdminGuests = () => {
           {!loading && totalPages > 1 && (
             <div className="mt-6 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 gap-4">
               <div>
-                Showing{' '}
-                <span className="font-bold text-gray-900">{(page - 1) * limit + 1}</span>
-                {' '}–{' '}
-                <span className="font-bold text-gray-900">{Math.min(page * limit, total)}</span>
-                {' '}of{' '}
-                <span className="font-bold text-gray-900">{total}</span> guests
+                Showing{" "}
+                <span className="font-bold text-gray-900">
+                  {(page - 1) * limit + 1}
+                </span>{" "}
+                –{" "}
+                <span className="font-bold text-gray-900">
+                  {Math.min(page * limit, total)}
+                </span>{" "}
+                of <span className="font-bold text-gray-900">{total}</span>{" "}
+                guests
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -1357,11 +1939,21 @@ export const AdminGuests = () => {
                 </button>
                 <button
                   disabled={page === 1}
-                  onClick={() => setPage(p => p - 1)}
+                  onClick={() => setPage((p) => p - 1)}
                   className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold flex items-center gap-1"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15 19l-7-7 7-7"
+                    />
                   </svg>
                   Prev
                 </button>
@@ -1370,12 +1962,22 @@ export const AdminGuests = () => {
                 </span>
                 <button
                   disabled={page === totalPages}
-                  onClick={() => setPage(p => p + 1)}
+                  onClick={() => setPage((p) => p + 1)}
                   className="px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all font-semibold flex items-center gap-1"
                 >
                   Next
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 5l7 7-7 7"
+                    />
                   </svg>
                 </button>
                 <button

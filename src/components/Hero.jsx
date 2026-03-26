@@ -1,36 +1,59 @@
-import { useState, useEffect } from 'react';
-import { Icon } from '@iconify/react';
-import useSettings from '../hooks/useSettings';
+import { useState, useEffect } from "react";
+import { Icon } from "@iconify/react";
+import useSettings from "../hooks/useSettings";
+// import {
+//   getGallerySections,
+//   getGalleryMedia,
+// } from "../services/galleryService";
 
 const Hero = ({ guestName, onOpenInvitation }) => {
   const { settings } = useSettings();
   const [isOpened, setIsOpened] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
   const [showChevron, setShowChevron] = useState(true);
+  // const [backgroundMedia, setBackgroundMedia] = useState(null);
 
   const handleOpenClick = () => {
     setIsOpened(true);
     onOpenInvitation();
 
-    // The hero exits with a scale/fade animation over 600ms
     setTimeout(() => {
-      // Physically remove it from the DOM after animation completes
       setIsRemoving(true);
-      window.scrollTo({ top: 0, behavior: 'instant' });
+      window.scrollTo({ top: 0, behavior: "instant" });
     }, 600);
   };
 
   useEffect(() => {
     const handleScroll = () => {
-      // Hide chevron if scrolled past 50% of viewport
       if (window.scrollY > window.innerHeight * 0.5) {
         setShowChevron(false);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // useEffect(() => {
+  //   const loadHeroMedia = async () => {
+  //     try {
+  //       const sections = await getGallerySections();
+  //       const heroSection = sections.find(
+  //         (s) => s.name.toLowerCase() === "hero" || s.key === "hero",
+  //       );
+  //       if (heroSection) {
+  //         const items = await getGalleryMedia(heroSection.id);
+  //         if (items.length > 0) {
+  //           // setBackgroundMedia(items[0].public_url);
+  //           setBackgroundMedia(null);
+  //         }
+  //       }
+  //     } catch (e) {
+  //       console.error("Error loading hero media", e);
+  //     }
+  //   };
+  //   loadHeroMedia();
+  // }, []);
 
   if (isRemoving) return null;
 
@@ -41,10 +64,11 @@ const Hero = ({ guestName, onOpenInvitation }) => {
   return (
     <header
       id="hero-section"
-      className={`relative min-h-screen flex flex-col items-center justify-between overflow-hidden bg-black py-20 w-full transition-all duration-600 ${isOpened ? 'opacity-0 scale-[1.04]' : 'opacity-100 scale-100'
-        }`}
-      style={{ transitionTimingFunction: 'cubic-bezier(0.16,1,0.3,1)' }}
-      aria-hidden={isOpened ? 'true' : 'false'}
+      className={`relative min-h-screen flex flex-col items-center justify-between overflow-hidden bg-black py-20 w-full transition-all duration-600 ${
+        isOpened ? "opacity-0 scale-[1.04]" : "opacity-100 scale-100"
+      }`}
+      style={{ transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)" }}
+      aria-hidden={isOpened ? "true" : "false"}
     >
       <div className="absolute inset-0 w-full h-full">
         <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A1A] via-[#4a0611] to-[#1A1A1A] scale-105 transition-transform duration-[20000ms] ease-out hover:scale-110"></div>
@@ -103,7 +127,7 @@ const Hero = ({ guestName, onOpenInvitation }) => {
             Dear,
           </p>
           <p className="text-2xl font-serif tracking-tight mb-10 font-normal text-white capitalize">
-            {guestName || 'Guest Name'}
+            {guestName || "Guest Name"}
           </p>
         </div>
 
@@ -125,8 +149,9 @@ const Hero = ({ guestName, onOpenInvitation }) => {
       {/* Scroll Chevron */}
       <div
         id="hero-chevron"
-        className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-10 anim-chevron pointer-events-none transition-opacity duration-400 ${showChevron ? 'opacity-100' : 'opacity-0'
-          }`}
+        className={`absolute bottom-6 left-1/2 -translate-x-1/2 z-10 anim-chevron pointer-events-none transition-opacity duration-400 ${
+          showChevron ? "opacity-100" : "opacity-0"
+        }`}
       >
         <Icon
           icon="solar:alt-arrow-down-linear"

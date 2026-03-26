@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
-
-const LOGO_URL =
-  "https://res.cloudinary.com/dpsaoeync/image/upload/v1773336735/Untitled_design_ewzvbh.png";
+import { useEffect } from "react";
+import { LOGO_URL } from "./LogoLoader";
 
 const styles = `
   /* B slides in from left, A from right */
@@ -226,20 +224,7 @@ function injectStyles() {
 }
 
 export default function LoadingScreen({ isLoading }) {
-  const [mounted, setMounted] = useState(isLoading);
-
   useEffect(() => { injectStyles(); }, []);
-
-  useEffect(() => {
-    if (isLoading) {
-      setMounted(true);
-    } else {
-      const t = setTimeout(() => setMounted(false), 950);
-      return () => clearTimeout(t);
-    }
-  }, [isLoading]);
-
-  if (!mounted) return null;
 
   return (
     <div

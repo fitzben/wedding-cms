@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { getWishes } from '../services/wishService';
 import useSettings from '../hooks/useSettings';
+import LogoLoader from './LogoLoader';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -246,7 +247,13 @@ const RSVP = () => {
         
         <div className="bg-white/50 backdrop-blur-sm rounded-3xl border border-gray-100 p-6 max-h-[500px] overflow-y-auto space-y-4 custom-scrollbar">
           {wishesLoading ? (
-            <div className="text-center py-10 text-gray-400 font-light italic">Loading wishes...</div>
+            <div className="py-10 flex items-center justify-center">
+              <LogoLoader
+                text="Loading wishes..."
+                size={56}
+                textClassName="text-gray-400 font-light italic text-sm"
+              />
+            </div>
           ) : wishes.length > 0 ? (
             wishes.map((wish, idx) => (
               <div key={wish.id || idx} className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 animate-fade-in-up" style={{ animationDelay: `${idx * 50}ms` }}>

@@ -1,46 +1,23 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiClient } from '../../services/apiClient';
 
 // ─── API ──────────────────────────────────────────────────────────────────────
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
-
-const getHeaders = () => ({
-  'Content-Type': 'application/json',
-  'Authorization': `Bearer ${localStorage.getItem('token')}`
-});
-
 const API = {
   list: (params = {}) => {
     const q = new URLSearchParams({ page: params.page || 1, limit: params.limit || 20, ...params.filters }).toString();
-    return fetch(`${BASE_URL}/api/admin/gifts?${q}`, { headers: getHeaders() }).then(r => r.json());
+    return apiClient.get(`/api/admin/gifts?${q}`);
   },
-  create: (body) =>
-    fetch(`${BASE_URL}/api/admin/gifts`, {
-      method: 'POST', headers: getHeaders(), body: JSON.stringify(body),
-    }).then(r => r.json()),
-  update: (id, body) =>
-    fetch(`${BASE_URL}/api/admin/gifts/${id}`, {
-      method: 'PUT', headers: getHeaders(), body: JSON.stringify(body),
-    }).then(r => r.json()),
-  remove: (id) =>
-    fetch(`${BASE_URL}/api/admin/gifts/${id}`, { method: 'DELETE', headers: getHeaders() }),
-  getSummary: () =>
-    fetch(`${BASE_URL}/api/admin/gifts/summary`, { headers: getHeaders() }).then(r => r.json()),
+  create: (body) => apiClient.post('/api/admin/gifts', body),
+  update: (id, body) => apiClient.put(`/api/admin/gifts/${id}`, body),
+  remove: (id) => apiClient.delete(`/api/admin/gifts/${id}`),
+  getSummary: () => apiClient.get('/api/admin/gifts/summary'),
 
   // Registry
-  registryList: () =>
-    fetch(`${BASE_URL}/api/admin/gifts/registry`, { headers: getHeaders() }).then(r => r.json()),
-  registryCreate: (body) =>
-    fetch(`${BASE_URL}/api/admin/gifts/registry`, {
-      method: 'POST', headers: getHeaders(), body: JSON.stringify(body),
-    }).then(r => r.json()),
-  registryUpdate: (id, body) =>
-    fetch(`${BASE_URL}/api/admin/gifts/registry/${id}`, {
-      method: 'PUT', headers: getHeaders(), body: JSON.stringify(body),
-    }).then(r => r.json()),
-  registryDelete: (id) =>
-    fetch(`${BASE_URL}/api/admin/gifts/registry/${id}`, { method: 'DELETE', headers: getHeaders() }),
-  registryClaims: (id) =>
-    fetch(`${BASE_URL}/api/admin/gifts/registry/${id}`, { headers: getHeaders() }).then(r => r.json()),
+  registryList: () => apiClient.get('/api/admin/gifts/registry'),
+  registryCreate: (body) => apiClient.post('/api/admin/gifts/registry', body),
+  registryUpdate: (id, body) => apiClient.put(`/api/admin/gifts/registry/${id}`, body),
+  registryDelete: (id) => apiClient.delete(`/api/admin/gifts/registry/${id}`),
+  registryClaims: (id) => apiClient.get(`/api/admin/gifts/registry/${id}`),
 };
 
 // ─── Toast ────────────────────────────────────────────────────────────────────
