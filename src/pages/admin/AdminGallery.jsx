@@ -85,13 +85,13 @@ function Toast({ toasts }) {
 }
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
-function ConfirmDialog({ open, title, message, onConfirm, onCancel }) {
+function ConfirmDialog({ open, title, message, onConfirm, onCancel, loading }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={onCancel}
+        onClick={loading ? undefined : onCancel}
       />
       <div className="relative bg-white rounded-2xl shadow-2xl p-7 w-full max-w-sm mx-4 border border-gray-100">
         <h3 className="text-lg font-bold text-gray-900 mb-2">{title}</h3>
@@ -99,15 +99,17 @@ function ConfirmDialog({ open, title, message, onConfirm, onCancel }) {
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50"
+            disabled={loading}
+            className="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600"
+            disabled={loading}
+            className="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 disabled:opacity-50"
           >
-            Delete
+            {loading ? "Deleting..." : "Delete"}
           </button>
         </div>
       </div>
@@ -263,6 +265,41 @@ function SectionModal({ onClose, onSave, initial }) {
   );
 }
 
+// ─── WebP Conversion ────────────────────────────────────────────────────────────
+async function convertToWebImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxWidth = 1600; // atur sesuai kebutuhan tampilan
+      const scale = Math.min(1, maxWidth / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // coba WebP dulu, fallback JPEG kalau browser nggak support
+      const type = "image/webp";
+      const quality = 0.8;
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("Failed to convert image"));
+          const ext = type === "image/webp" ? ".webp" : ".jpg";
+          const name = file.name.replace(/\.[^/.]+$/, "") + ext;
+          const webFile = new File([blob], name, { type, lastModified: file.lastModified });
+          resolve(webFile);
+        },
+        type,
+        quality
+      );
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 // ─── Upload Zone ──────────────────────────────────────────────────────────────
 function UploadZone({ section, onUploaded, push }) {
   const [progress, setProgress] = useState([]);
@@ -274,15 +311,27 @@ function UploadZone({ section, onUploaded, push }) {
       push(`Section "${section.name}" does not accept videos`, "error");
       return;
     }
+    
+    let finalFile = file;
+    if (!isVideo) {
+      // compress/resize dulu foto sebelum upload
+      try {
+        finalFile = await convertToWebImage(file);
+      } catch (err) {
+        console.error("Failed to convert image", err);
+        // Fallback to original file
+      }
+    }
+
     const id = Date.now() + Math.random();
     setProgress((p) => [
       ...p,
-      { id, name: file.name, pct: 0, done: false, error: false },
+      { id, name: finalFile.name, pct: 0, done: false, error: false },
     ]);
     try {
       const { upload_url, public_url, key } = await API.getUploadUrl(
-        file.name,
-        file.type,
+        finalFile.name,
+        finalFile.type,
         section.id
       );
       await new Promise((resolve, reject) => {
@@ -299,16 +348,16 @@ function UploadZone({ section, onUploaded, push }) {
             : reject(new Error(`Upload failed: ${xhr.status}`));
         xhr.onerror = () => reject(new Error("Network error"));
         xhr.open("PUT", upload_url);
-        xhr.setRequestHeader("Content-Type", file.type);
-        xhr.send(file);
+        xhr.setRequestHeader("Content-Type", finalFile.type);
+        xhr.send(finalFile);
       });
       await API.confirmUpload({
         section_id: section.id,
         key,
         public_url,
-        filename: file.name,
-        content_type: file.type,
-        size: file.size,
+        filename: finalFile.name,
+        content_type: finalFile.type,
+        size: finalFile.size,
         media_type: isVideo ? "video" : "image",
       });
       setProgress((p) =>
@@ -520,6 +569,7 @@ function MediaGrid({ section, media, onRefresh, push }) {
   const [captionModal, setCaptionModal] = useState({ open: false, media: null });
   const [confirmDel, setConfirmDel] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { setItems(media); }, [media]);
 
@@ -549,10 +599,17 @@ function MediaGrid({ section, media, onRefresh, push }) {
   };
 
   const handleDelete = async () => {
-    await API.deleteMedia(confirmDel.id);
-    push("Media deleted", "success");
-    setConfirmDel(null);
-    onRefresh();
+    setDeleting(true);
+    try {
+      await API.deleteMedia(confirmDel.id);
+      push("Media deleted", "success");
+      setConfirmDel(null);
+      onRefresh();
+    } catch {
+      push("Failed to delete media", "error");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const handleSetCover = async (mediaId) => {
@@ -590,6 +647,7 @@ function MediaGrid({ section, media, onRefresh, push }) {
         message={`Delete "${confirmDel?.filename}"? This cannot be undone and will remove the file from R2.`}
         onConfirm={handleDelete}
         onCancel={() => setConfirmDel(null)}
+        loading={deleting}
       />
 
       {/* Reorder hint + saving indicator */}
@@ -656,7 +714,7 @@ function MediaGrid({ section, media, onRefresh, push }) {
 }
 
 // ─── Section Panel ────────────────────────────────────────────────────────────
-function SectionPanel({ section, onEdit, onDelete, push }) {
+function SectionPanel({ section, onEdit, onDelete, push, onRefresh }) {
   const [expanded, setExpanded] = useState(false);
   const [media, setMedia] = useState([]);
   const [loadingMedia, setLoadingMedia] = useState(false);
@@ -732,14 +790,24 @@ function SectionPanel({ section, onEdit, onDelete, push }) {
       {/* Expanded */}
       {expanded && (
         <div className="border-t border-gray-50 px-5 pb-5 pt-4 space-y-4">
-          <UploadZone section={section} onUploaded={loadMedia} push={push} />
+          <UploadZone 
+            section={section} 
+            onUploaded={() => {
+              loadMedia();
+              if (onRefresh) onRefresh();
+            }} 
+            push={push} 
+          />
           {loadingMedia ? (
             <div className="text-center text-gray-400 text-sm py-4">Loading…</div>
           ) : (
             <MediaGrid
               section={section}
               media={media}
-              onRefresh={loadMedia}
+              onRefresh={() => {
+                loadMedia();
+                if (onRefresh) onRefresh();
+              }}
               push={push}
             />
           )}
@@ -755,17 +823,18 @@ export const AdminGallery = () => {
   const [loading, setLoading] = useState(true);
   const [sectionModal, setSectionModal] = useState({ open: false, initial: null });
   const [confirmDel, setConfirmDel] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const { toasts, push } = useToast();
 
-  const loadSections = useCallback(async () => {
-    setLoading(true);
+  const loadSections = useCallback(async (background = false) => {
+    if (!background) setLoading(true);
     try {
       const data = await API.getSections();
       setSections(data.sections || data || []);
     } catch {
       push("Failed to load sections", "error");
     } finally {
-      setLoading(false);
+      if (!background) setLoading(false);
     }
   }, [push]);
 
@@ -785,10 +854,17 @@ export const AdminGallery = () => {
   };
 
   const handleDeleteSection = async () => {
-    await API.deleteSection(confirmDel.id);
-    push("Section deleted", "success");
-    setConfirmDel(null);
-    loadSections();
+    setDeleting(true);
+    try {
+      await API.deleteSection(confirmDel.id);
+      push("Section deleted", "success");
+      setConfirmDel(null);
+      loadSections();
+    } catch {
+      push("Failed to delete section", "error");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -800,6 +876,7 @@ export const AdminGallery = () => {
         message={`Delete section "${confirmDel?.name}" and all its media? This cannot be undone.`}
         onConfirm={handleDeleteSection}
         onCancel={() => setConfirmDel(null)}
+        loading={deleting}
       />
       {sectionModal.open && (
         <SectionModal
@@ -863,7 +940,7 @@ export const AdminGallery = () => {
                 <SectionPanel
                   key={s.id}
                   section={s}
-                  onRefresh={loadSections}
+                  onRefresh={() => loadSections(true)}
                   onEdit={(sec) => setSectionModal({ open: true, initial: sec })}
                   onDelete={(sec) => setConfirmDel(sec)}
                   push={push}
