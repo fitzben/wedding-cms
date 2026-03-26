@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { API } from "../../pages/admin";
+import { Input, Label, SaveButton, SectionCard } from "./components";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 export function TabSecurity({ push }) {
