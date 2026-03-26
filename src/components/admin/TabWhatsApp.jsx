@@ -10,6 +10,7 @@ const WA_VARIABLES = [
   "{tanggal_hm}",
   "{tanggal_resepsi}",
   "{venue_resepsi}",
+  "{venue_holy_matrimony}",
 ];
 
 export function TabWhatsApp({ settings, onChange, onSave, saving }) {
@@ -40,7 +41,7 @@ export function TabWhatsApp({ settings, onChange, onSave, saving }) {
         <Label>Message Template</Label>
         <Textarea
           rows={10}
-          placeholder={`Halo {nama},\n\nKami dengan penuh sukacita mengundang kamu ke pernikahan kami.\n\n📅 Resepsi: {tanggal_resepsi}\n📍 Venue: {venue_resepsi}\n\nSilakan konfirmasi kehadiranmu di:\n{link}\n\nTerima kasih 🙏`}
+          placeholder={`Halo {nama},\n\nKami dengan penuh sukacita mengundang kamu ke pernikahan kami.\n\n📅 Holy Matrimony: {tanggal_hm}\n📍 Venue: {venue_holy_matrimony}\n\n📅 Resepsi: {tanggal_resepsi}\n📍 Venue: {venue_resepsi}\n\nSilakan konfirmasi kehadiranmu di:\n{link}\n\nTerima kasih 🙏`}
           value={settings.wa_template ?? ""}
           onChange={(e) => onChange("wa_template", e.target.value)}
         />
@@ -61,7 +62,8 @@ export function TabWhatsApp({ settings, onChange, onSave, saving }) {
               .replace("{link}", "https://undangan.com/invite/budi")
               .replace("{tanggal_hm}", "12 Juli 2025")
               .replace("{tanggal_resepsi}", "12 Juli 2025")
-              .replace("{venue_resepsi}", "Ballroom The Ritz Carlton") || (
+              .replace("{venue_resepsi}", "Ballroom The Ritz Carlton")
+              .replace("{venue_holy_matrimony}", "Gereja Santa Maria") || (
               <span className="text-gray-400 italic">Template kosong</span>
             )}
           </div>
