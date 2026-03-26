@@ -1,12 +1,31 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 import { Icon } from '@iconify/react';
 import useSettings from '../hooks/useSettings';
+import { getGallerySections, getGalleryMedia } from '../services/galleryService';
 
 const CoupleIntro = () => {
   const [hoveredProfile, setHoveredProfile] = useState(null);
   const { settings } = useSettings();
   useScrollReveal([settings]);
+
+  const [coupleMedia, setCoupleMedia] = useState([]);
+
+  useEffect(() => {
+    const loadCoupleMedia = async () => {
+      try {
+        const sections = await getGallerySections();
+        const coupleSection = sections.find((s) => s.name.toLowerCase() === 'couple photos' || s.key === 'couple' || s.key === 'couple_photos');
+        if (coupleSection) {
+          const items = await getGalleryMedia(coupleSection.id);
+          setCoupleMedia(items);
+        }
+      } catch (e) {
+        console.error('Error loading couple media', e);
+      }
+    };
+    loadCoupleMedia();
+  }, []);
 
   const groomName = settings?.groom_name || 'Benjamin';
   const brideName = settings?.bride_name || 'Angelin';
@@ -16,19 +35,28 @@ const CoupleIntro = () => {
   const groomIG = settings?.groom_instagram;
   const brideIG = settings?.bride_instagram;
 
+  const [particles] = useState(() => {
+    return [...Array(15)].map(() => ({
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animationDuration: `${Math.random() * 5 + 5}s`,
+      animationDelay: `${Math.random() * 5}s`
+    }));
+  });
+
   return (
     <section id="section-couple" className="py-32 bg-ivory relative overflow-hidden">
       
       {/* Floating Romantic Particles */}
       <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-        {[...Array(15)].map((_, i) => (
+        {particles.map((p, i) => (
           <div 
             key={i}
             className="absolute text-maroon/20"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animation: `floatRomantic ${Math.random() * 5 + 5}s infinite ease-in-out ${Math.random() * 5}s`,
+              left: p.left,
+              top: p.top,
+              animation: `floatRomantic ${p.animationDuration} infinite ease-in-out ${p.animationDelay}`,
               opacity: 0,
             }}
           >
@@ -49,7 +77,11 @@ const CoupleIntro = () => {
           >
             <div className={`relative w-64 h-80 md:w-72 md:h-96 mb-6 rounded-3xl p-2 border border-gold/40 transition-all duration-500 group bg-white/50 backdrop-blur-sm cursor-pointer ${hoveredProfile ? 'shadow-2xl scale-105' : 'shadow-lg'}`}>
               <div className="w-full h-full rounded-2xl overflow-hidden relative">
-                <div className="w-full h-full bg-gradient-to-tr from-[#1A1A1A] via-[#2a2a2a] to-[#4a0611] transition-transform duration-1000 group-hover:scale-110"></div>
+                {coupleMedia[0] ? (
+                  <img src={coupleMedia[0].public_url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="Groom Portrait" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-tr from-[#1A1A1A] via-[#2a2a2a] to-[#4a0611] transition-transform duration-1000 group-hover:scale-110"></div>
+                )}
                 <div className="absolute inset-0 bg-maroon/0 group-hover:bg-maroon/10 transition-colors duration-500"></div>
               </div>
             </div>
@@ -120,7 +152,11 @@ const CoupleIntro = () => {
           >
             <div className={`relative w-64 h-80 md:w-72 md:h-96 mb-6 rounded-3xl p-2 border border-gold/40 transition-all duration-500 group bg-white/50 backdrop-blur-sm cursor-pointer ${hoveredProfile ? 'shadow-2xl scale-105' : 'shadow-lg'}`}>
               <div className="w-full h-full rounded-2xl overflow-hidden relative">
-                <div className="w-full h-full bg-gradient-to-bl from-[#1A1A1A] via-[#2a2a2a] to-[#4a0611] transition-transform duration-1000 group-hover:scale-110"></div>
+                {coupleMedia[1] ? (
+                  <img src={coupleMedia[1].public_url} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt="Bride Portrait" />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-bl from-[#1A1A1A] via-[#2a2a2a] to-[#4a0611] transition-transform duration-1000 group-hover:scale-110"></div>
+                )}
                 <div className="absolute inset-0 bg-maroon/0 group-hover:bg-maroon/10 transition-colors duration-500"></div>
               </div>
             </div>

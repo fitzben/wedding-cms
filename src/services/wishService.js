@@ -1,25 +1,12 @@
+import { apiClient } from './apiClient';
 import { apiCache } from './apiCache';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export const getWishes = async () => {
   const cacheKey = 'public_wishes';
 
   return apiCache.fetch(cacheKey, async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/wishes`);
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch wishes');
-      }
-
-      const data = await response.json();
-      return data.wishes;
-    } catch (error) {
-      console.error('Error fetching wishes:', error);
-      throw error;
-    }
+    const data = await apiClient.get('/api/wishes');
+    return data.wishes;
   });
 };
 

@@ -1,20 +1,8 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { apiClient } from './apiClient';
 
 export const login = async (email, password) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.error || 'Login failed');
-    }
+    const data = await apiClient.post('/api/auth/login', { email, password }, { useAuth: false });
 
     // Store token in localStorage
     if (data.token) {
