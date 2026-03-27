@@ -28,7 +28,7 @@ const Footer = () => {
       </svg>
 
       <p
-        className="text-xs italic font-serif font-light text-white/40 mb-12 relative z-10 obs-hide obs-up"
+        className="italic font-serif font-light text-white/40 mb-12 relative z-10 obs-hide obs-up"
         style={{ animationDelay: "300ms" }}
       >
         Created with love &amp; gratitude by BenElin
