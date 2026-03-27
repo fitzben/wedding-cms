@@ -19,6 +19,7 @@ export const AdminLayout = () => {
     },
     { name: "RSVP", path: "/admin/rsvp", roles: ["admin"] },
     { name: "Wishes", path: "/admin/wishes", roles: ["admin"] },
+    { name: "Journey", path: "/admin/our-journey", roles: ["admin"] },
     { name: "Gallery", path: "/admin/gallery", roles: ["admin"] },
     { name: "Gifts", path: "/admin/gifts", roles: ["admin"] },
     { name: "Settings", path: "/admin/settings", roles: ["admin"] },
