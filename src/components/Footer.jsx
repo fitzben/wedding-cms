@@ -1,4 +1,4 @@
-import { useScrollReveal } from '../hooks/useScrollReveal';
+import { useScrollReveal } from "../hooks/useScrollReveal";
 
 const Footer = () => {
   useScrollReveal();
@@ -8,37 +8,37 @@ const Footer = () => {
       <h2 className="font-serif text-3xl tracking-tight mb-6 font-normal text-white relative z-10 obs-hide obs-up obs-letter-spacing">
         Benjamin &amp; Angelin
       </h2>
-      <p 
-        className="text-gold text-[0.65rem] uppercase tracking-[0.3em] font-light mb-6 relative z-10 obs-hide obs-up" 
-        style={{ animationDelay: '100ms' }}
+      <p
+        className="text-gold text-[0.65rem] uppercase tracking-[0.3em] font-light mb-6 relative z-10 obs-hide obs-up"
+        style={{ animationDelay: "100ms" }}
       >
         31 May 2026
       </p>
-      
-      <svg 
-        className="w-16 text-gold mb-6 relative z-10 obs-hide obs-scale" 
-        viewBox="0 0 100 4" 
-        fill="none" 
-        stroke="currentColor" 
-        strokeWidth="0.5" 
-        style={{ animationDelay: '200ms' }}
+
+      <svg
+        className="w-16 text-gold mb-6 relative z-10 obs-hide obs-scale"
+        viewBox="0 0 100 4"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="0.5"
+        style={{ animationDelay: "200ms" }}
       >
         <line x1="0" y1="2" x2="100" y2="2"></line>
         <circle cx="50" cy="2" r="1.5" fill="#C9A84C"></circle>
       </svg>
 
-      <p 
-        className="text-xs italic font-serif font-light text-white/40 mb-12 relative z-10 obs-hide obs-up" 
-        style={{ animationDelay: '300ms' }}
+      <p
+        className="text-xs italic font-serif font-light text-white/40 mb-12 relative z-10 obs-hide obs-up"
+        style={{ animationDelay: "300ms" }}
       >
-        With love &amp; gratitude
+        Created with love &amp; gratitude by BenElin
       </p>
 
       {/* Jakarta Skyline */}
-      <svg 
-        className="w-full h-32 absolute bottom-0 left-0 text-ivory obs-hide obs-monas pointer-events-none" 
-        viewBox="0 0 1000 100" 
-        preserveAspectRatio="xMidYMax slice" 
+      <svg
+        className="w-full h-32 absolute bottom-0 left-0 text-ivory obs-hide obs-monas pointer-events-none"
+        viewBox="0 0 1000 100"
+        preserveAspectRatio="xMidYMax slice"
         fill="currentColor"
       >
         {/* Monas */}

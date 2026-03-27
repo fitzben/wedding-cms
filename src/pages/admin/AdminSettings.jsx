@@ -5,6 +5,7 @@ import { TabUsers } from "../../components/admin/TabUsers";
 import { TabWhatsApp } from "../../components/admin/TabWhatsApp";
 import { TabSecurity } from "../../components/admin/TabSecurity";
 import { apiClient } from "../../services/apiClient";
+import { Toast } from "../../components/admin/components";
 
 // ─── API ─────────────────────────────────────────────────────────────────────
 // eslint-disable-next-line react-refresh/only-export-components
@@ -29,27 +30,6 @@ function useToast() {
     setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3500);
   }, []);
   return { toasts, push };
-}
-function Toast({ toasts }) {
-  return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto border
-          ${t.type === "success" ? "bg-gray-900 text-white border-gray-700" : ""}
-          ${t.type === "error" ? "bg-red-900 text-red-100 border-red-700" : ""}
-          ${t.type === "info" ? "bg-blue-900 text-blue-100 border-blue-700" : ""}
-        `}
-        >
-          {t.type === "success" && <span className="text-emerald-400">✓</span>}
-          {t.type === "error" && <span className="text-red-400">✕</span>}
-          {t.type === "info" && <span className="text-blue-300">ℹ</span>}
-          {t.message}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════

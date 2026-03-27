@@ -1,5 +1,4 @@
-export const LOGO_URL =
-  "https://media.benelin.my.id/gallery/sec-logo/bc96801e-8a1f-4575-8a0e-d2049a56bf8a.png";
+export const LOGO_URL = "../../public/logo.png";
 
 export default function LogoLoader({
   text,
@@ -21,4 +20,3 @@ export default function LogoLoader({
     </div>
   );
 }
-
