@@ -13,6 +13,7 @@ import {
   AdminGuests,
   AdminRSVP,
   AdminGallery,
+  AdminOurJourney,
   AdminGifts,
   AdminWishes,
   AdminSettings,
@@ -33,13 +34,13 @@ function App() {
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route 
-            path="/" 
-            element={settings.maintenance_mode ? <Maintenance settings={settings} /> : <Landing />} 
+        <Route
+            path="/"
+            element={settings.maintenance_mode ? <Maintenance settings={settings} /> : <Landing />}
         />
-        <Route 
-            path="/invite/:guestSlug" 
-            element={settings.maintenance_mode ? <Maintenance settings={settings} /> : <Home />} 
+        <Route
+            path="/invite/:guestSlug"
+            element={settings.maintenance_mode ? <Maintenance settings={settings} /> : <Home />}
         />
 
         {/* Admin Login */}
@@ -84,6 +85,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['admin']}>
                 <AdminGallery />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="our-journey"
+            element={
+              <ProtectedRoute allowedRoles={['admin']}>
+                <AdminOurJourney />
               </ProtectedRoute>
             }
           />

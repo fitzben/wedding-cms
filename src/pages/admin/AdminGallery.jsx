@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { apiClient } from "../../services/apiClient";
-import { Toast } from "../../components/admin/components";
+import { ConvertToWebImage, Toast } from "../../components/admin/components";
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 const API = {
@@ -244,44 +244,6 @@ function SectionModal({ onClose, onSave, initial }) {
   );
 }
 
-// ─── WebP Conversion ────────────────────────────────────────────────────────────
-async function convertToWebImage(file) {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const maxWidth = 1600; // atur sesuai kebutuhan tampilan
-      const scale = Math.min(1, maxWidth / img.width);
-      canvas.width = img.width * scale;
-      canvas.height = img.height * scale;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      // coba WebP dulu, fallback JPEG kalau browser nggak support
-      const type = "image/webp";
-      const quality = 0.8;
-
-      canvas.toBlob(
-        (blob) => {
-          if (!blob) return reject(new Error("Failed to convert image"));
-          const ext = type === "image/webp" ? ".webp" : ".jpg";
-          const name = file.name.replace(/\.[^/.]+$/, "") + ext;
-          const webFile = new File([blob], name, {
-            type,
-            lastModified: file.lastModified,
-          });
-          resolve(webFile);
-        },
-        type,
-        quality,
-      );
-    };
-    img.onerror = reject;
-    img.src = URL.createObjectURL(file);
-  });
-}
-
 // ─── Upload Zone ──────────────────────────────────────────────────────────────
 function UploadZone({ section, onUploaded, push }) {
   const [progress, setProgress] = useState([]);
@@ -298,7 +260,7 @@ function UploadZone({ section, onUploaded, push }) {
     if (!isVideo) {
       // compress/resize dulu foto sebelum upload
       try {
-        finalFile = await convertToWebImage(file);
+        finalFile = await ConvertToWebImage(file);
       } catch (err) {
         console.error("Failed to convert image", err);
         // Fallback to original file

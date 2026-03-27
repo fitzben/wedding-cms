@@ -166,3 +166,41 @@ export function Toast({ toasts }) {
     </div>
   );
 }
+
+// ─── WebP Conversion ────────────────────────────────────────────────────────────
+export async function ConvertToWebImage(file) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const maxWidth = 1600; // atur sesuai kebutuhan tampilan
+      const scale = Math.min(1, maxWidth / img.width);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // coba WebP dulu, fallback JPEG kalau browser nggak support
+      const type = "image/webp";
+      const quality = 0.8;
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) return reject(new Error("Failed to convert image"));
+          const ext = type === "image/webp" ? ".webp" : ".jpg";
+          const name = file.name.replace(/\.[^/.]+$/, "") + ext;
+          const webFile = new File([blob], name, {
+            type,
+            lastModified: file.lastModified,
+          });
+          resolve(webFile);
+        },
+        type,
+        quality,
+      );
+    };
+    img.onerror = reject;
+    img.src = URL.createObjectURL(file);
+  });
+}

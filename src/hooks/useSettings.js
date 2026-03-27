@@ -39,6 +39,7 @@ export default function useSettings() {
   useEffect(() => {
     mounted.current = true;
     if (_cache) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSettings(_cache);
       setLoading(false);
       return;
