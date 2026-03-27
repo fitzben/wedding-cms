@@ -15,6 +15,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { apiClient } from "../../services/apiClient";
+import { Toast } from "../../components/admin/components";
 
 // ─── API ──────────────────────────────────────────────────────────────────────
 const API = {
@@ -60,28 +61,6 @@ function useToast() {
     setTimeout(() => setToasts((p) => p.filter((t) => t.id !== id)), 3500);
   }, []);
   return { toasts, push };
-}
-
-function Toast({ toasts }) {
-  return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto border
-          ${t.type === "success" ? "bg-gray-900 text-white border-gray-700" : ""}
-          ${t.type === "error" ? "bg-red-900 text-red-100 border-red-700" : ""}
-          ${t.type === "info" ? "bg-blue-50 text-blue-700 border-blue-100" : ""}
-        `}
-        >
-          {t.type === "success" && <span className="text-emerald-400">✓</span>}
-          {t.type === "error" && <span className="text-red-400">✕</span>}
-          {t.type === "info" && <span className="text-blue-400">ℹ</span>}
-          {t.message}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
@@ -181,7 +160,7 @@ function SectionModal({ onClose, onSave, initial }) {
           key: initial.key,
           accepts_video: !!initial.accepts_video,
         }
-      : { name: "", key: "gallery", accepts_video: false }
+      : { name: "", key: "gallery", accepts_video: false },
   );
   const [saving, setSaving] = useState(false);
 
@@ -288,11 +267,14 @@ async function convertToWebImage(file) {
           if (!blob) return reject(new Error("Failed to convert image"));
           const ext = type === "image/webp" ? ".webp" : ".jpg";
           const name = file.name.replace(/\.[^/.]+$/, "") + ext;
-          const webFile = new File([blob], name, { type, lastModified: file.lastModified });
+          const webFile = new File([blob], name, {
+            type,
+            lastModified: file.lastModified,
+          });
           resolve(webFile);
         },
         type,
-        quality
+        quality,
       );
     };
     img.onerror = reject;
@@ -311,7 +293,7 @@ function UploadZone({ section, onUploaded, push }) {
       push(`Section "${section.name}" does not accept videos`, "error");
       return;
     }
-    
+
     let finalFile = file;
     if (!isVideo) {
       // compress/resize dulu foto sebelum upload
@@ -332,7 +314,7 @@ function UploadZone({ section, onUploaded, push }) {
       const { upload_url, public_url, key } = await API.getUploadUrl(
         finalFile.name,
         finalFile.type,
-        section.id
+        section.id,
       );
       await new Promise((resolve, reject) => {
         const xhr = new XMLHttpRequest();
@@ -361,13 +343,13 @@ function UploadZone({ section, onUploaded, push }) {
         media_type: isVideo ? "video" : "image",
       });
       setProgress((p) =>
-        p.map((x) => (x.id === id ? { ...x, pct: 100, done: true } : x))
+        p.map((x) => (x.id === id ? { ...x, pct: 100, done: true } : x)),
       );
       setTimeout(() => setProgress((p) => p.filter((x) => x.id !== id)), 1500);
       onUploaded();
     } catch {
       setProgress((p) =>
-        p.map((x) => (x.id === id ? { ...x, error: true } : x))
+        p.map((x) => (x.id === id ? { ...x, error: true } : x)),
       );
       push(`Failed to upload ${file.name}`, "error");
       setTimeout(() => setProgress((p) => p.filter((x) => x.id !== id)), 3000);
@@ -456,7 +438,14 @@ function UploadZone({ section, onUploaded, push }) {
 }
 
 // ─── Sortable Media Item (dnd-kit) ────────────────────────────────────────────
-function SortableMediaItem({ item, section, onDelete, onCaption, onSetCover, isDraggingAny }) {
+function SortableMediaItem({
+  item,
+  section,
+  onDelete,
+  onCaption,
+  onSetCover,
+  isDraggingAny,
+}) {
   const {
     attributes,
     listeners,
@@ -489,15 +478,26 @@ function SortableMediaItem({ item, section, onDelete, onCaption, onSetCover, isD
         className="absolute top-2 left-2 z-20 w-6 h-6 rounded-lg bg-black/40 backdrop-blur-sm flex items-center justify-center cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity"
         title="Drag to reorder"
       >
-        <svg className="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24">
-          <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
-          <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-          <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+        <svg
+          className="w-3.5 h-3.5 text-white"
+          fill="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <circle cx="9" cy="5" r="1.5" />
+          <circle cx="15" cy="5" r="1.5" />
+          <circle cx="9" cy="12" r="1.5" />
+          <circle cx="15" cy="12" r="1.5" />
+          <circle cx="9" cy="19" r="1.5" />
+          <circle cx="15" cy="19" r="1.5" />
         </svg>
       </div>
 
       {item.media_type === "video" ? (
-        <video src={item.public_url} className="w-full h-full object-cover" muted />
+        <video
+          src={item.public_url}
+          className="w-full h-full object-cover"
+          muted
+        />
       ) : (
         <img
           src={item.public_url}
@@ -527,8 +527,18 @@ function SortableMediaItem({ item, section, onDelete, onCaption, onSetCover, isD
             onClick={() => onDelete(item)}
             className="w-6 h-6 bg-red-500 rounded-lg flex items-center justify-center hover:bg-red-600 transition-all"
           >
-            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-3 h-3 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="3"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -566,15 +576,20 @@ function SortableMediaItem({ item, section, onDelete, onCaption, onSetCover, isD
 function MediaGrid({ section, media, onRefresh, push }) {
   const [items, setItems] = useState(media);
   const [activeId, setActiveId] = useState(null);
-  const [captionModal, setCaptionModal] = useState({ open: false, media: null });
+  const [captionModal, setCaptionModal] = useState({
+    open: false,
+    media: null,
+  });
   const [confirmDel, setConfirmDel] = useState(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => { setItems(media); }, [media]);
+  useEffect(() => {
+    setItems(media);
+  }, [media]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
   );
 
   const handleDragStart = ({ active }) => setActiveId(active.id);
@@ -588,7 +603,10 @@ function MediaGrid({ section, media, onRefresh, push }) {
     setItems(reordered);
     setSaving(true);
     try {
-      await API.reorderMedia(section.id, reordered.map((i) => i.id));
+      await API.reorderMedia(
+        section.id,
+        reordered.map((i) => i.id),
+      );
       push("Order saved", "info");
     } catch {
       push("Failed to save order", "error");
@@ -654,17 +672,35 @@ function MediaGrid({ section, media, onRefresh, push }) {
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-gray-400 flex items-center gap-1.5">
           <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-            <circle cx="9" cy="5" r="1.5" /><circle cx="15" cy="5" r="1.5" />
-            <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
-            <circle cx="9" cy="19" r="1.5" /><circle cx="15" cy="19" r="1.5" />
+            <circle cx="9" cy="5" r="1.5" />
+            <circle cx="15" cy="5" r="1.5" />
+            <circle cx="9" cy="12" r="1.5" />
+            <circle cx="15" cy="12" r="1.5" />
+            <circle cx="9" cy="19" r="1.5" />
+            <circle cx="15" cy="19" r="1.5" />
           </svg>
           Drag photos to reorder
         </p>
         {saving && (
           <span className="text-xs text-gray-400 flex items-center gap-1">
-            <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            <svg
+              className="animate-spin w-3 h-3"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
             </svg>
             Saving order…
           </span>
@@ -677,7 +713,10 @@ function MediaGrid({ section, media, onRefresh, push }) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext items={items.map((i) => i.id)} strategy={rectSortingStrategy}>
+        <SortableContext
+          items={items.map((i) => i.id)}
+          strategy={rectSortingStrategy}
+        >
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {items.map((item) => (
               <SortableMediaItem
@@ -744,21 +783,37 @@ function SectionPanel({ section, onEdit, onDelete, push, onRefresh }) {
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center">
-            <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+            <svg
+              className="w-4 h-4 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
           </div>
           <div>
-            <div className="font-semibold text-gray-900 text-sm">{section.name}</div>
+            <div className="font-semibold text-gray-900 text-sm">
+              {section.name}
+            </div>
             <div className="text-xs text-gray-400">
-              {SECTION_KEYS.find((s) => s.value === section.key)?.label || section.key}
+              {SECTION_KEYS.find((s) => s.value === section.key)?.label ||
+                section.key}
               {section.accepts_video && (
                 <span className="ml-1.5 text-purple-500">· Video allowed</span>
               )}
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex items-center gap-2"
+          onClick={(e) => e.stopPropagation()}
+        >
           <span className="text-xs text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">
             {section.media_count ?? 0} items
           </span>
@@ -766,23 +821,50 @@ function SectionPanel({ section, onEdit, onDelete, push, onRefresh }) {
             onClick={() => onEdit(section)}
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+              />
             </svg>
           </button>
           <button
             onClick={() => onDelete(section)}
             className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition-all"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+              />
             </svg>
           </button>
           <svg
             className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
-            fill="none" viewBox="0 0 24 24" stroke="currentColor"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M19 9l-7 7-7-7"
+            />
           </svg>
         </div>
       </div>
@@ -790,16 +872,18 @@ function SectionPanel({ section, onEdit, onDelete, push, onRefresh }) {
       {/* Expanded */}
       {expanded && (
         <div className="border-t border-gray-50 px-5 pb-5 pt-4 space-y-4">
-          <UploadZone 
-            section={section} 
+          <UploadZone
+            section={section}
             onUploaded={() => {
               loadMedia();
               if (onRefresh) onRefresh();
-            }} 
-            push={push} 
+            }}
+            push={push}
           />
           {loadingMedia ? (
-            <div className="text-center text-gray-400 text-sm py-4">Loading…</div>
+            <div className="text-center text-gray-400 text-sm py-4">
+              Loading…
+            </div>
           ) : (
             <MediaGrid
               section={section}
@@ -821,33 +905,47 @@ function SectionPanel({ section, onEdit, onDelete, push, onRefresh }) {
 export const AdminGallery = () => {
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [sectionModal, setSectionModal] = useState({ open: false, initial: null });
+  const [sectionModal, setSectionModal] = useState({
+    open: false,
+    initial: null,
+  });
   const [confirmDel, setConfirmDel] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const { toasts, push } = useToast();
 
-  const loadSections = useCallback(async (background = false) => {
-    if (!background) setLoading(true);
-    try {
-      const data = await API.getSections();
-      setSections(data.sections || data || []);
-    } catch {
-      push("Failed to load sections", "error");
-    } finally {
-      if (!background) setLoading(false);
-    }
-  }, [push]);
+  const loadSections = useCallback(
+    async (background = false) => {
+      if (!background) setLoading(true);
+      try {
+        const data = await API.getSections();
+        setSections(data.sections || data || []);
+      } catch {
+        push("Failed to load sections", "error");
+      } finally {
+        if (!background) setLoading(false);
+      }
+    },
+    [push],
+  );
 
-  useEffect(() => { loadSections(); }, [loadSections]);
+  useEffect(() => {
+    loadSections();
+  }, [loadSections]);
 
   const handleSaveSection = async (form) => {
     if (sectionModal.initial) {
       const res = await API.updateSection(sectionModal.initial.id, form);
-      if (res.error) { push(res.error, "error"); return; }
+      if (res.error) {
+        push(res.error, "error");
+        return;
+      }
       push("Section updated", "success");
     } else {
       const res = await API.createSection(form);
-      if (res.error) { push(res.error, "error"); return; }
+      if (res.error) {
+        push(res.error, "error");
+        return;
+      }
       push("Section created", "success");
     }
     loadSections();
@@ -901,8 +999,18 @@ export const AdminGallery = () => {
             onClick={() => setSectionModal({ open: true, initial: null })}
             className="flex items-center gap-1.5 px-4 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 4v16m8-8H4"
+              />
             </svg>
             New Section
           </button>
@@ -912,16 +1020,41 @@ export const AdminGallery = () => {
         <div className="p-6 md:p-8">
           {loading ? (
             <div className="py-16 flex items-center justify-center text-gray-400 gap-2">
-              <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              <svg
+                className="animate-spin w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                />
               </svg>
               Loading gallery…
             </div>
           ) : sections.length === 0 ? (
             <div className="py-16 text-center">
-              <svg className="w-12 h-12 text-gray-200 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                className="w-12 h-12 text-gray-200 mx-auto mb-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="1.5"
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
               <p className="text-gray-500 font-medium mb-1">No sections yet</p>
               <p className="text-gray-400 text-sm mb-4">
@@ -941,7 +1074,9 @@ export const AdminGallery = () => {
                   key={s.id}
                   section={s}
                   onRefresh={() => loadSections(true)}
-                  onEdit={(sec) => setSectionModal({ open: true, initial: sec })}
+                  onEdit={(sec) =>
+                    setSectionModal({ open: true, initial: sec })
+                  }
                   onDelete={(sec) => setConfirmDel(sec)}
                   push={push}
                 />
