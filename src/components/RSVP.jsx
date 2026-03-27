@@ -80,7 +80,6 @@ const RSVP = ({ guest, guestName, maxPax = 2 }) => {
       // Prepare the Wishes request if message is not empty
       let wishesPromise = Promise.resolve({ ok: true });
       if (formData.message.trim()) {
-        console.log("masuk");
         wishesPromise = fetch(`${API_BASE_URL}/api/wishes`, {
           method: "POST",
           headers: {
