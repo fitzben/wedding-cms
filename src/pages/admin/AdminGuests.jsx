@@ -1,29 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import useAdminGuests from "../../hooks/admin/useAdminGuests";
-
-// ─── Toast ───────────────────────────────────────────────────────────────────
-function Toast({ toasts }) {
-  return (
-    <div className="fixed bottom-6 right-6 z-[100] flex flex-col gap-2 pointer-events-none">
-      {toasts.map((t) => (
-        <div
-          key={t.id}
-          className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg text-sm font-medium pointer-events-auto
-            transition-all duration-300
-            ${t.type === "success" ? "bg-emerald-900 text-emerald-100 border border-emerald-700" : ""}
-            ${t.type === "error" ? "bg-red-900 text-red-100 border border-red-700" : ""}
-            ${t.type === "info" ? "bg-gray-800 text-gray-100 border border-gray-600" : ""}
-          `}
-        >
-          {t.type === "success" && <span>✓</span>}
-          {t.type === "error" && <span>✕</span>}
-          {t.type === "info" && <span>ℹ</span>}
-          {t.message}
-        </div>
-      ))}
-    </div>
-  );
-}
+import { Toast } from "../../components/admin/components";
 
 // ─── Confirm Dialog ───────────────────────────────────────────────────────────
 function ConfirmDialog({ open, title, message, onConfirm, onCancel, danger }) {

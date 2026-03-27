@@ -72,18 +72,18 @@ const Home = () => {
         loop
       />
       <LoadingScreen isLoading={loading || settingsLoading} />
-      
+
       {/* Inter-Section Transition Overlay */}
       {transitionRendered && (
-        <div 
+        <div
           className={`fixed inset-0 z-[100] flex items-center justify-center bg-offwhite transition-opacity duration-700 pointer-events-none ${
             transitionVisible ? "opacity-100" : "opacity-0"
           }`}
         >
           <div className="animate-pulse">
-            <LogoLoader 
-              text="Entering moments..." 
-              size={72} 
+            <LogoLoader
+              text="Entering moments..."
+              size={72}
               textClassName="text-maroon/50 font-serif italic text-lg tracking-widest mt-6"
             />
           </div>
@@ -105,15 +105,15 @@ const Home = () => {
             setTimeout(() => {
               // Stage 2: Fade in the overlay
               setTransitionVisible(true);
-              
+
               // Stage 3: After fade-in (600ms), start the section switch behind the overlay
               setTimeout(() => {
                 setInvitationOpened(true);
-                
+
                 // Stage 4: Maintain overlay for 1.2s to process layout/images
                 setTimeout(() => {
                   setTransitionVisible(false); // fade out
-                  
+
                   // Stage 5: Unmount overlay after fade completes (700ms)
                   setTimeout(() => setTransitionRendered(false), 700);
                 }, 1200);
@@ -144,7 +144,13 @@ const Home = () => {
           <ManadoDivider className="bg-offwhite pt-[100px]" />
 
           <Gallery />
-          {isRsvpEnabled && <RSVP />}
+          {isRsvpEnabled && (
+            <RSVP 
+              guest={guest}
+              guestName={guestName} 
+              maxPax={guest?.pax_allowed || 2} 
+            />
+          )}
 
           <ManadoDivider className="bg-ivory pt-[100px]" />
 

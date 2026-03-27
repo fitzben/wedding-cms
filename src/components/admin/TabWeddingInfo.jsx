@@ -194,6 +194,47 @@ export function TabWedding({ settings, onChange, onSave, saving }) {
         </div>
       </SectionCard>
 
+      {/* Bank Accounts */}
+      <SectionCard
+        title="Bank Accounts & Gift"
+        description="Details for the digital envelope"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label optional>Bride Bank Name</Label>
+            <Input placeholder="e.g. BCA" {...f("bride_bank_name")} />
+          </div>
+          <div>
+            <Label optional>Groom Bank Name</Label>
+            <Input placeholder="e.g. Mandiri" {...f("groom_bank_name")} />
+          </div>
+
+          <div>
+            <Label optional>Bride Account Number</Label>
+            <Input placeholder="e.g. 12345678" {...f("bride_bank_account")} />
+          </div>
+          <div>
+            <Label optional>Groom Account Number</Label>
+            <Input placeholder="e.g. 098765432" {...f("groom_bank_account")} />
+          </div>
+
+          <div>
+            <Label optional>Bride Account Name</Label>
+            <Input
+              placeholder="e.g. 12345678"
+              {...f("bride_bank_account_name")}
+            />
+          </div>
+          <div>
+            <Label optional>Groom Account Name</Label>
+            <Input
+              placeholder="e.g. 098765432"
+              {...f("groom_bank_account_name")}
+            />
+          </div>
+        </div>
+      </SectionCard>
+
       {/* Countdown */}
       <SectionCard
         title="Countdown Timer"
