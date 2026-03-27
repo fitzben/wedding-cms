@@ -1,8 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Home from './pages/Home';
 import Landing from './pages/Landing';
+import Maintenance from './pages/Maintenance';
+import useSettings from './hooks/useSettings';
 import * as authService from './services/authService';
 import ProtectedRoute from './components/ProtectedRoute';
+import LoadingScreen from './components/LoadingScreen';
 import {
   AdminLayout,
   AdminLogin,
@@ -22,12 +25,22 @@ const AdminIndexRedirect = () => {
 };
 
 function App() {
+  const { settings, loading } = useSettings();
+
+  if (loading) return <LoadingScreen />;
+
   return (
     <Router>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Landing />} />
-        <Route path="/invite/:guestSlug" element={<Home />} />
+        <Route 
+            path="/" 
+            element={settings.maintenance_mode ? <Maintenance settings={settings} /> : <Landing />} 
+        />
+        <Route 
+            path="/invite/:guestSlug" 
+            element={settings.maintenance_mode ? <Maintenance settings={settings} /> : <Home />} 
+        />
 
         {/* Admin Login */}
         <Route path="/admin/login" element={<AdminLogin />} />

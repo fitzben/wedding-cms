@@ -1,6 +1,211 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import useSettings from "../hooks/useSettings";
+
+// ─── Rose Petals Background ───────────────────────────────────────────────────
+const PETAL_COLORS = [
+  { r: 180, g: 30, b: 45 },
+  { r: 140, g: 20, b: 35 },
+  { r: 210, g: 60, b: 70 },
+  { r: 160, g: 40, b: 60 },
+  { r: 201, g: 168, b: 76 },
+  { r: 190, g: 50, b: 80 },
+];
+const PETAL_WEIGHTS = [22, 22, 20, 18, 8, 10];
+
+function rndPetalColor() {
+  let r = Math.random() * PETAL_WEIGHTS.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < PETAL_WEIGHTS.length; i++) {
+    r -= PETAL_WEIGHTS[i];
+    if (r <= 0) return PETAL_COLORS[i];
+  }
+  return PETAL_COLORS[0];
+}
+
+function drawPetalPath(ctx, r) {
+  ctx.beginPath();
+  ctx.moveTo(0, -r);
+  ctx.bezierCurveTo(r * 0.55, -r * 0.9, r * 0.85, r * 0.1, 0, r);
+  ctx.bezierCurveTo(-r * 0.85, r * 0.1, -r * 0.55, -r * 0.9, 0, -r);
+  ctx.closePath();
+}
+
+function mkPetal(W, H, fromTop = true) {
+  const depth = 0.3 + Math.random() * 0.7;
+  return {
+    x: Math.random() * W,
+    y: fromTop ? -20 - Math.random() * 80 : Math.random() * H,
+    size: 5 + Math.random() * 11,
+    depth,
+    opacity: 0.18 + depth * 0.3,
+    color: rndPetalColor(),
+    vx: (Math.random() - 0.5) * 0.6 * depth,
+    vy: 0.4 + depth * 1.1,
+    rotation: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.025,
+    wobbleAmp: 0.6 + Math.random() * 1.2,
+    wobbleFreq: 0.008 + Math.random() * 0.012,
+    wobbleOff: Math.random() * Math.PI * 2,
+    alive: true,
+  };
+}
+
+function mkBurstPetal(x, y) {
+  const angle = Math.random() * Math.PI * 2;
+  const speed = 2 + Math.random() * 5;
+  return {
+    x,
+    y,
+    size: 4 + Math.random() * 9,
+    depth: 0.7,
+    opacity: 0.6 + Math.random() * 0.2,
+    color: rndPetalColor(),
+    vx: Math.cos(angle) * speed,
+    vy: Math.sin(angle) * speed - 2,
+    rotation: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.08,
+    wobbleAmp: 0,
+    wobbleFreq: 0,
+    wobbleOff: 0,
+    alive: true,
+    burst: true,
+    gravity: 0.12,
+    drag: 0.97,
+    life: 1,
+    fadeSpeed: 0.012 + Math.random() * 0.01,
+  };
+}
+
+function useRosePetals(isVisible) {
+  const canvasRef = useRef(null);
+  const petalsRef = useRef([]);
+  const frameRef = useRef(0);
+
+  const triggerBurst = useCallback((clientX, clientY) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    for (let i = 0; i < 18; i++)
+      petalsRef.current.push(
+        mkBurstPetal(clientX - rect.left, clientY - rect.top),
+      );
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    let animId;
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    resize();
+    const ro = new ResizeObserver(resize);
+    ro.observe(canvas);
+
+    const W = () => canvas.width;
+    const H = () => canvas.height;
+    petalsRef.current = Array.from({ length: 45 }, () =>
+      mkPetal(W(), H(), false),
+    );
+
+    const draw = () => {
+      animId = requestAnimationFrame(draw);
+      frameRef.current++;
+      const w = W(),
+        h = H();
+      ctx.clearRect(0, 0, w, h);
+
+      if (
+        petalsRef.current.filter((p) => !p.burst).length < 45 &&
+        frameRef.current % 14 === 0
+      ) {
+        petalsRef.current.push(mkPetal(w, h, true));
+      }
+
+      petalsRef.current = petalsRef.current.filter((p) => p.alive);
+
+      for (const p of petalsRef.current) {
+        if (p.burst) {
+          p.vx *= p.drag;
+          p.vy += p.gravity;
+          p.vy *= p.drag;
+          p.x += p.vx;
+          p.y += p.vy;
+          p.rotation += p.rotSpeed;
+          p.life -= p.fadeSpeed;
+          p.opacity = Math.max(0, p.life * 0.65);
+          if (p.life <= 0 || p.y > h + 40) p.alive = false;
+        } else {
+          const wobble =
+            Math.sin(frameRef.current * p.wobbleFreq + p.wobbleOff) *
+            p.wobbleAmp;
+          p.x += p.vx + wobble * 0.05;
+          p.y += p.vy;
+          p.rotation += p.rotSpeed;
+          if (p.x < -20) p.x = w + 10;
+          if (p.x > w + 20) p.x = -10;
+          if (p.y > h + 20) Object.assign(p, mkPetal(w, h, true));
+        }
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+
+        const { r, g, b } = p.color;
+        if (p.depth > 0.5) {
+          ctx.shadowColor = `rgba(${r},${g},${b},0.15)`;
+          ctx.shadowBlur = p.size * 1.5;
+        }
+
+        const grad = ctx.createRadialGradient(
+          -p.size * 0.2,
+          -p.size * 0.3,
+          0,
+          0,
+          0,
+          p.size * 1.2,
+        );
+        grad.addColorStop(
+          0,
+          `rgba(${Math.min(r + 40, 255)},${Math.min(g + 30, 255)},${Math.min(b + 30, 255)},${p.opacity})`,
+        );
+        grad.addColorStop(
+          0.6,
+          `rgba(${r},${g},${b},${(p.opacity * 0.85).toFixed(2)})`,
+        );
+        grad.addColorStop(
+          1,
+          `rgba(${Math.max(r - 30, 0)},${Math.max(g - 15, 0)},${Math.max(b - 15, 0)},${(p.opacity * 0.5).toFixed(2)})`,
+        );
+
+        drawPetalPath(ctx, p.size);
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        ctx.shadowBlur = 0;
+        drawPetalPath(ctx, p.size);
+        ctx.strokeStyle = `rgba(${Math.max(r - 20, 0)},${Math.max(g - 10, 0)},${Math.max(b - 10, 0)},${(p.opacity * 0.3).toFixed(2)})`;
+        ctx.lineWidth = 0.4;
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    };
+
+    draw();
+
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+    };
+  }, [isVisible]);
+
+  return { canvasRef, triggerBurst };
+}
 
 // ─── Countdown logic ──────────────────────────────────────────────────────────
 function useCountdown(targetDateStr) {
@@ -271,6 +476,7 @@ const Hashtag = ({ isVisible }) => {
   useScrollReveal();
   const { settings } = useSettings();
   const animatedRef = useRef(false);
+  const { canvasRef: petalCanvasRef, triggerBurst } = useRosePetals(isVisible);
 
   const groomNickname = settings?.groom_nickname || "Benjamin";
   const brideNickname = settings?.bride_nickname || "Angelin";
@@ -343,6 +549,7 @@ const Hashtag = ({ isVisible }) => {
     <section
       id="section-hashtag"
       className="min-h-screen flex flex-col items-center justify-end pb-16 md:pb-24 bg-[#1a0408] relative overflow-hidden"
+      onClick={(e) => triggerBurst(e.clientX, e.clientY)}
     >
       {/* ── Background layers ── */}
       <div className="absolute inset-0 z-0 pointer-events-none">
@@ -351,6 +558,13 @@ const Hashtag = ({ isVisible }) => {
         <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-[#0d0204]/80 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 h-2/5 bg-gradient-to-t from-[#0d0204] via-[#0d0204]/90 to-transparent" />
       </div>
+
+      {/* ── Rose Petals Canvas ── */}
+      <canvas
+        ref={petalCanvasRef}
+        className="absolute inset-0 w-full h-full pointer-events-none"
+        style={{ zIndex: 2 }}
+      />
 
       {/* ── Particles ── */}
       <div
@@ -388,7 +602,7 @@ const Hashtag = ({ isVisible }) => {
             opacity: 0,
             transform: "translateY(20px)",
             transition: transBase,
-            fontSize: "10px",
+            fontSize: "15px",
             letterSpacing: "0.4em",
             color: "rgba(201,168,76,0.7)",
             fontFamily: "Georgia, serif",
