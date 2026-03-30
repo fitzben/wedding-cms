@@ -6,6 +6,8 @@ import { BatakDivider, ManadoDivider } from "../components/Dividers";
 import CoupleIntro from "../components/CoupleIntro";
 import Journey from "../components/Journey";
 import EventDetails from "../components/EventDetails";
+import LiveStream from "../components/LiveStream";
+import DressCode from "../components/DressCode";
 import Gallery from "../components/Gallery";
 import RSVP from "../components/RSVP";
 import GiftRegistry from "../components/GiftRegistry";
@@ -178,6 +180,9 @@ const Home = () => {
           <BatakDivider className="bg-offwhite z-20 py-8 relative" />
 
           <EventDetails eventAccess={eventAccess} settings={settings} />
+
+          <LiveStream settings={settings} />
+          <DressCode settings={settings} />
 
           <ManadoDivider className="bg-offwhite pt-[100px]" />
 
