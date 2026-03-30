@@ -4,6 +4,8 @@ import { TabFeatures } from "../../components/admin/TabFeatures";
 import { TabUsers } from "../../components/admin/TabUsers";
 import { TabWhatsApp } from "../../components/admin/TabWhatsApp";
 import { TabSecurity } from "../../components/admin/TabSecurity";
+import { TabLiveStream } from "../../components/admin/TabLiveStream";
+import { TabDressCode } from "../../components/admin/TabDressCode";
 import { apiClient } from "../../services/apiClient";
 import { Toast } from "../../components/admin/components";
 
@@ -40,6 +42,8 @@ const TABS = [
   { id: "features", label: "Features", icon: "⚙️" },
   { id: "users", label: "Users", icon: "👥" },
   { id: "whatsapp", label: "WhatsApp", icon: "💬" },
+  { id: "livestream", label: "Live Stream", icon: "📺" },
+  { id: "dresscode", label: "Dress Code", icon: "👗" },
   { id: "security", label: "Security", icon: "🔒" },
 ];
 
@@ -160,6 +164,22 @@ export const AdminSettings = () => {
               {activeTab === "users" && <TabUsers push={push} />}
               {activeTab === "whatsapp" && (
                 <TabWhatsApp
+                  settings={settings}
+                  onChange={handleChange}
+                  onSave={handleSave}
+                  saving={saving}
+                />
+              )}
+              {activeTab === "livestream" && (
+                <TabLiveStream
+                  settings={settings}
+                  onChange={handleChange}
+                  onSave={handleSave}
+                  saving={saving}
+                />
+              )}
+              {activeTab === "dresscode" && (
+                <TabDressCode
                   settings={settings}
                   onChange={handleChange}
                   onSave={handleSave}

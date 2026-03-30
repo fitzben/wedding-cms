@@ -137,14 +137,18 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 border border-gray-100 overflow-hidden max-h-[90vh] flex flex-col">
+      <div className="relative bg-white rounded-t-3xl md:rounded-2xl shadow-2xl w-full md:max-w-lg md:mx-4 border border-gray-100 overflow-hidden max-h-[92vh] flex flex-col">
+        {/* Drag handle — mobile only */}
+        <div className="md:hidden flex justify-center pt-3 pb-1 flex-shrink-0">
+          <div className="w-10 h-1 bg-gray-200 rounded-full" />
+        </div>
         {/* Header */}
-        <div className="px-7 pt-7 pb-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
+        <div className="px-6 pt-4 pb-4 md:px-7 md:pt-7 md:pb-5 border-b border-gray-100 flex items-center justify-between flex-shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-900">
               {initial ? "Edit Guest" : "Add New Guest"}
@@ -427,17 +431,17 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
         </div>
 
         {/* Footer */}
-        <div className="px-7 pb-7 flex justify-end gap-3 flex-shrink-0">
+        <div className="px-6 pb-6 pt-4 md:px-7 md:pb-7 flex gap-3 flex-shrink-0 border-t border-gray-50">
           <button
             onClick={onClose}
-            className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-all"
+            className="flex-1 md:flex-none px-5 py-3 rounded-xl border border-gray-200 text-gray-700 text-sm font-semibold hover:bg-gray-50 transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="px-5 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm disabled:opacity-60 flex items-center gap-2"
+            className="flex-1 md:flex-none px-5 py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {saving && (
               <svg
@@ -675,8 +679,84 @@ export const AdminGuests = () => {
 
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
         {/* ── Header ── */}
-        <div className="p-8 border-b border-gray-100">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="px-4 pt-5 pb-4 md:p-8 border-b border-gray-100">
+          {/* Mobile top row: title + Add button */}
+          <div className="flex items-center justify-between mb-3 md:hidden">
+            <div>
+              <h1 className="text-lg font-bold text-gray-900">Guests</h1>
+              <p className="text-gray-400 text-xs mt-0.5">
+                {total} tamu{activeFilterCount > 0 ? ` · ${activeFilterCount} filter` : ""}{showDeleted ? " · deleted" : ""}
+              </p>
+            </div>
+            {isAdmin && !showDeleted && (
+              <button
+                onClick={openCreate}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                </svg>
+                Add
+              </button>
+            )}
+          </div>
+
+          {/* Mobile second row: search + icon buttons */}
+          <div className="flex items-center gap-2 md:hidden">
+            <div className="relative flex-1">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search guests…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-gray-200 focus:border-gray-300 outline-none transition-all w-full"
+              />
+            </div>
+            {/* Deleted toggle */}
+            <button
+              onClick={() => { setShowDeleted((v) => !v); setPage(1); }}
+              title={showDeleted ? "Show active" : "Show deleted"}
+              className={`p-2.5 rounded-xl border flex-shrink-0 transition-all ${showDeleted ? "bg-red-50 border-red-200 text-red-500" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters((v) => !v)}
+              className={`relative p-2.5 rounded-xl border flex-shrink-0 transition-all ${showFilters || activeFilterCount > 0 ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+              </svg>
+              {activeFilterCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
+            </button>
+            {/* Bulk delete (appears when items selected) */}
+            {selected.size > 0 && isAdmin && (
+              <button
+                onClick={handleBulkDelete}
+                className="relative p-2.5 rounded-xl border border-red-100 bg-red-50 text-red-500 flex-shrink-0"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  {selected.size}
+                </span>
+              </button>
+            )}
+          </div>
+
+          {/* Desktop layout — unchanged */}
+          <div className="hidden md:flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Guests</h1>
               <p className="text-gray-400 text-sm mt-0.5">
@@ -847,6 +927,7 @@ export const AdminGuests = () => {
               )}
             </div>
           </div>
+
         </div>
 
         {/* ── Filter Bar ── */}
@@ -854,7 +935,51 @@ export const AdminGuests = () => {
           className={`border-b border-gray-100 overflow-hidden transition-all duration-200 ${showFilters ? "max-h-[500px]" : "max-h-0"}`}
         >
           <div className="px-6 md:px-8 py-4 flex flex-wrap gap-3 items-end bg-gray-50/50">
-            {/* Category */}
+            {/* Mobile: 2-col grid wrapper */}
+            <div className="grid grid-cols-2 gap-3 w-full md:hidden">
+              {[
+                { label: "Category", key: "category", opts: ["friend","family","colleague"] },
+                { label: "Priority", key: "priority", opts: ["low","medium","high"] },
+                { label: "Importance", key: "importance", opts: ["normal","vip","vvip"], upper: true },
+                { label: "Jenis Undangan", key: "invitation_type", custom: [
+                  { v: "digital", l: "📱 Digital" },
+                  { v: "physical", l: "✉️ Fisik" },
+                  { v: "both", l: "📱✉️ Keduanya" },
+                ]},
+              ].map(({ label, key, opts, upper, custom }) => (
+                <div key={key} className="flex flex-col gap-1">
+                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{label}</label>
+                  <select value={filters[key] ?? ""} onChange={(e) => setFilter(key, e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all w-full">
+                    <option value="">Semua</option>
+                    {custom
+                      ? custom.map(({ v, l }) => <option key={v} value={v}>{l}</option>)
+                      : opts.map((o) => <option key={o} value={o}>{upper ? o.toUpperCase() : o.charAt(0).toUpperCase() + o.slice(1)}</option>)
+                    }
+                  </select>
+                </div>
+              ))}
+              <div className="flex flex-col gap-1 col-span-2">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Group</label>
+                <select value={filters.guest_group_id ?? ""} onChange={(e) => setFilter("guest_group_id", e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all w-full">
+                  <option value="">Semua Group</option>
+                  {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                </select>
+              </div>
+              {activeFilterCount > 0 && (
+                <button onClick={clearFilters}
+                  className="col-span-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-semibold">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Reset filter
+                </button>
+              )}
+            </div>
+
+            {/* Desktop: original flex-wrap layout */}
+            <div className="hidden md:flex flex-wrap gap-3 items-end w-full">
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
                 Category
@@ -969,6 +1094,7 @@ export const AdminGuests = () => {
                 Reset filter
               </button>
             )}
+            </div>{/* end desktop filter wrapper */}
           </div>
         </div>
 
@@ -1383,78 +1509,113 @@ export const AdminGuests = () => {
           </div>
 
           {/* ── Mobile Card List ── */}
-          <div className="md:hidden space-y-4 px-4 pb-4">
+          <div className="md:hidden px-3 pb-4 space-y-2.5">
+            {/* Select-all bar */}
+            {!loading && guests.length > 0 && (
+              <div className="flex items-center justify-between py-2 px-1">
+                <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none">
+                  <input type="checkbox" checked={allSelected} onChange={toggleAll}
+                    className="w-4 h-4 rounded border-gray-300 accent-gray-900" />
+                  Pilih semua
+                </label>
+                {selected.size > 0 && (
+                  <span className="text-xs font-semibold text-gray-500 bg-gray-100 px-2.5 py-1 rounded-full">
+                    {selected.size} dipilih
+                  </span>
+                )}
+              </div>
+            )}
+
             {loading ? (
-              <div className="py-10 text-center text-gray-400">
-                Loading guests...
+              <div className="py-16 text-center flex flex-col items-center gap-3 text-gray-400">
+                <svg className="animate-spin w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span className="text-sm">Loading guests…</span>
               </div>
             ) : guests.length === 0 ? (
-              <div className="py-10 text-center text-gray-400">
-                No guests found.
+              <div className="py-16 text-center flex flex-col items-center gap-3">
+                <svg className="w-12 h-12 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <p className="text-gray-400 text-sm">{search ? `Tidak ada tamu untuk "${search}"` : "Belum ada tamu."}</p>
+                {!search && isAdmin && (
+                  <button onClick={openCreate} className="text-sm font-semibold text-gray-900 underline underline-offset-2">
+                    Tambah tamu pertama →
+                  </button>
+                )}
               </div>
             ) : (
               guests.map((guest) => {
-                const groupName = groups.find(
-                  (g) => g.id === guest.guest_group_id,
-                )?.name;
+                const groupName = groups.find((g) => g.id === guest.guest_group_id)?.name;
                 const isDeleted = !!guest.deleted_at;
                 const isSelected = selected.has(guest.id);
+                const isSent = guest.invite_status === "sent";
 
                 return (
                   <div
                     key={guest.id}
-                    className={`p-5 rounded-2xl border transition-all active:scale-[0.98]
-                      ${isDeleted ? "bg-red-50/40 border-red-100 opacity-60" : isSelected ? "bg-gray-50 border-gray-300" : "bg-white border-gray-100 shadow-sm"}`}
                     onClick={() => toggleOne(guest.id)}
+                    className={`rounded-2xl border transition-all active:scale-[0.99] overflow-hidden
+                      ${isDeleted
+                        ? "bg-red-50/30 border-red-100 opacity-70"
+                        : isSelected
+                          ? "bg-gray-50 border-gray-300 shadow-sm"
+                          : "bg-white border-gray-100 shadow-sm"
+                      }`}
                   >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center gap-3">
+                    {/* Card body */}
+                    <div className="p-4">
+                      <div className="flex items-start gap-3">
+                        {/* Checkbox */}
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={(e) => {
-                            e.stopPropagation();
-                            toggleOne(guest.id);
-                          }}
-                          className="w-5 h-5 rounded-lg border-gray-300 accent-gray-900 cursor-pointer"
+                          onChange={(e) => { e.stopPropagation(); toggleOne(guest.id); }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-1 w-4 h-4 rounded border-gray-300 accent-gray-900 cursor-pointer flex-shrink-0"
                         />
-                        <div>
-                          <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                            {guest.display_name}
+
+                        {/* Avatar */}
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border
+                          ${isDeleted ? "bg-red-50 border-red-200 text-red-400" : "bg-gray-100 border-gray-200 text-gray-600"}`}>
+                          {(guest.display_name || "?").charAt(0).toUpperCase()}
+                        </div>
+
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="font-bold text-gray-900 text-sm leading-tight">{guest.display_name}</span>
                             {isDeleted && (
-                              <span className="text-[10px] text-red-500 font-bold uppercase">
-                                deleted
-                              </span>
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">deleted</span>
                             )}
-                          </h3>
-                          <p className="text-xs text-gray-400 font-mono tracking-wider">
-                            {guest.slug}
-                          </p>
+                            {!isDeleted && isSent && (
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">✓ sent</span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-gray-400">{guest.phone_number || "—"}</span>
+                            {groupName && (
+                              <>
+                                <span className="text-gray-200">·</span>
+                                <span className="text-xs text-indigo-500 font-medium truncate max-w-[100px]">{groupName}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Pax */}
+                        <div className="flex-shrink-0 flex flex-col items-center">
+                          <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-black text-gray-700">
+                            {guest.pax_allowed}
+                          </div>
+                          <span className="text-[9px] text-gray-400 mt-0.5">pax</span>
                         </div>
                       </div>
-                      <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 text-xs font-black border border-gray-200">
-                        {guest.pax_allowed}
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-sm mb-4">
-                      <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                          Phone
-                        </p>
-                        <p className="text-gray-700 font-medium">
-                          {guest.phone_number || "—"}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
-                          Group
-                        </p>
-                        <p className="text-gray-700 truncate font-medium">
-                          {groupName || "—"}
-                        </p>
-                      </div>
-                      <div className="col-span-2 flex flex-wrap gap-2">
+                      {/* Badges */}
+                      <div className="flex flex-wrap gap-1.5 mt-3 ml-[52px]">
                         <CategoryBadge value={guest.category} />
                         <PriorityBadge value={guest.priority} />
                         <ImportanceBadge value={guest.importance} />
@@ -1464,128 +1625,70 @@ export const AdminGuests = () => {
                           isOverride={!!guest.event_access_override}
                         />
                       </div>
+
+                      {/* Notes */}
+                      {guest.notes && (
+                        <p className="mt-2.5 ml-[52px] text-xs italic text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 line-clamp-2">
+                          {guest.notes}
+                        </p>
+                      )}
                     </div>
 
-                    {guest.notes && (
-                      <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs italic text-gray-500">
-                        "{guest.notes}"
-                      </div>
-                    )}
-
+                    {/* Action bar */}
                     <div
-                      className="flex items-center justify-end gap-2 pt-3 border-t border-gray-50"
+                      className="flex items-center gap-1.5 px-4 py-2.5 border-t border-gray-50 bg-gray-50/40"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {isDeleted ? (
                         isAdmin && (
                           <button
-                            onClick={() =>
-                              handleRestore(guest.id, guest.display_name)
-                            }
-                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100"
+                            onClick={() => handleRestore(guest.id, guest.display_name)}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100"
                           >
-                            Restore Guest
+                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            Restore
                           </button>
                         )
                       ) : (
                         <>
-                          {/* WA send */}
-                          <button
-                            onClick={() => openWhatsApp(guest)}
-                            title="Kirim via WhatsApp"
-                            className="p-2.5 bg-green-50 text-green-600 rounded-xl border border-green-100"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              viewBox="0 0 24 24"
-                              fill="currentColor"
-                            >
+                          {/* WA */}
+                          <button onClick={() => openWhatsApp(guest)} title="Kirim via WhatsApp"
+                            className="flex-1 flex items-center justify-center gap-1 py-2 bg-green-50 text-green-600 rounded-xl border border-green-100 text-xs font-semibold">
+                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
                               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
                               <path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.554 4.11 1.523 5.837L.057 23.882a.5.5 0 00.61.61l6.045-1.466A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.497-5.27-1.394l-.38-.22-3.933.954.97-3.934-.24-.392A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
                             </svg>
+                            WA
                           </button>
                           {/* Mark invited */}
-                          <button
-                            onClick={() => handleMarkInvited(guest)}
-                            title={
-                              guest.invite_status === "sent"
-                                ? "Undo sent"
-                                : "Tandai sudah diundang"
-                            }
-                            className={`p-2.5 rounded-xl border ${guest.invite_status === "sent" ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-50 text-gray-400 border-gray-200"}`}
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
+                          <button onClick={() => handleMarkInvited(guest)}
+                            title={isSent ? "Undo sent" : "Tandai sudah diundang"}
+                            className={`p-2.5 rounded-xl border transition-all ${isSent ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-100 text-gray-400 border-gray-200"}`}>
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                           </button>
-                          <a
-                            href={`/invite/${guest.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-2.5 bg-gray-50 text-gray-700 rounded-xl border border-gray-200"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                              />
+                          {/* Preview */}
+                          <a href={`/invite/${guest.slug}`} target="_blank" rel="noopener noreferrer"
+                            className="p-2.5 bg-gray-100 text-gray-500 rounded-xl border border-gray-200">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                             </svg>
                           </a>
                           {isAdmin && (
                             <>
-                              <button
-                                onClick={() => openEdit(guest)}
-                                className="p-2.5 bg-gray-50 text-gray-600 rounded-xl border border-gray-200"
-                              >
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                  />
+                              <button onClick={() => openEdit(guest)}
+                                className="p-2.5 bg-gray-100 text-gray-500 rounded-xl border border-gray-200">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                 </svg>
                               </button>
-                              <button
-                                onClick={() =>
-                                  handleDelete(guest.id, guest.display_name)
-                                }
-                                className="p-2.5 bg-red-50 text-red-500 rounded-xl border border-red-100"
-                              >
-                                <svg
-                                  className="w-4 h-4"
-                                  fill="none"
-                                  viewBox="0 0 24 24"
-                                  stroke="currentColor"
-                                >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                  />
+                              <button onClick={() => handleDelete(guest.id, guest.display_name)}
+                                className="p-2.5 bg-red-50 text-red-400 rounded-xl border border-red-100">
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                 </svg>
                               </button>
                             </>
@@ -1598,10 +1701,9 @@ export const AdminGuests = () => {
               })
             )}
           </div>
-
           {/* ── Pagination ── */}
           {!loading && totalPages > 1 && (
-            <div className="mt-6 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 gap-4">
+            <div className="mt-4 px-4 md:px-0 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 gap-4">
               <div>
                 Showing{" "}
                 <span className="font-bold text-gray-900">
