@@ -483,7 +483,6 @@ const Hashtag = ({ isVisible }) => {
   const weddingDate = settings?.resepsi_date || "";
   const hashtag = settings?.hashtag || `#BengothisAngel`;
 
-  // Format display date: "2026-05-31" → "31 · 05 · 2026"
   const fmtDate = weddingDate
     ? weddingDate.split("-").reverse().join(" · ")
     : "31 · 05 · 2026";
@@ -501,8 +500,8 @@ const Hashtag = ({ isVisible }) => {
 
     const ids = [
       "ht-label",
-      "ht-main",
-      "ht-line",
+      "ht-main-container",
+      "ht-line-desktop",
       "ht-countdown",
       "ht-date",
       "ht-scroll",
@@ -614,81 +613,83 @@ const Hashtag = ({ isVisible }) => {
           Wedding Invitation
         </p>
 
-        {/* Names */}
-        <h1
-          id="ht-main"
-          className="font-script leading-none mb-5"
+        {/* Names Block — Responsive Layout */}
+        <div
+          id="ht-main-container"
+          className="relative w-full flex flex-col items-center justify-center mb-10"
           style={{
             opacity: 0,
             transform: "translateY(40px)",
             transition: transBase,
-            fontSize: "clamp(52px, 10vw, 130px)",
-            color: "#f5f0e8",
-            textShadow: "0 4px 60px rgba(201,168,76,0.2)",
           }}
         >
-          {groomNickname} &amp; {brideNickname}
-        </h1>
+          {/* ── MOBILE VIEW: Stacked Names + Ghost & ── */}
+          <div className="flex md:hidden flex-col items-center justify-center relative w-full mb-6">
+            {/* Ghost "&" — Higher visibility on mobile */}
+            <span
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-serif italic text-[clamp(180px,50vw,300px)] text-gold/[0.12] pointer-events-none select-none z-0"
+              style={{ lineHeight: 1 }}
+            >
+              &amp;
+            </span>
 
-        {/* Divider line */}
-        <div
-          id="ht-line"
-          style={{
-            opacity: 0,
-            transition: "opacity 0.8s ease",
-            marginBottom: "2.5rem",
-          }}
-        >
-          <svg width="240" height="8" viewBox="0 0 240 8" fill="none">
-            <line
-              x1="0"
-              y1="4"
-              x2="108"
-              y2="4"
-              stroke="#C9A84C"
-              strokeWidth="0.8"
-              strokeDasharray="108"
-              strokeDashoffset="108"
+            {/* Names */}
+            <span
+              className="font-script relative z-10 text-[clamp(64px,16vw,90px)] leading-[1.1] mb-2"
+              style={{
+                color: "#f5f0e8",
+                textShadow: "0 4px 60px rgba(201,168,76,0.2)",
+              }}
             >
-              <animate
-                attributeName="stroke-dashoffset"
-                from="108"
-                to="0"
-                dur="1s"
-                begin="0.6s"
-                fill="freeze"
-              />
-            </line>
-            <circle cx="120" cy="4" r="3" fill="#C9A84C" opacity="0">
-              <animate
-                attributeName="opacity"
-                from="0"
-                to="1"
-                dur="0.3s"
-                begin="1.2s"
-                fill="freeze"
-              />
-            </circle>
-            <line
-              x1="132"
-              y1="4"
-              x2="240"
-              y2="4"
-              stroke="#C9A84C"
-              strokeWidth="0.8"
-              strokeDasharray="108"
-              strokeDashoffset="108"
+              {groomNickname}
+            </span>
+            <span
+              className="font-script relative z-10 text-[clamp(64px,16vw,90px)] leading-[1.1]"
+              style={{
+                color: "#f5f0e8",
+                textShadow: "0 4px 60px rgba(201,168,76,0.2)",
+              }}
             >
-              <animate
-                attributeName="stroke-dashoffset"
-                from="108"
-                to="0"
-                dur="1s"
-                begin="0.6s"
-                fill="freeze"
-              />
-            </line>
-          </svg>
+              {brideNickname}
+            </span>
+          </div>
+
+          {/* ── DESKTOP VIEW: Horizontal Names + Original Divider ── */}
+          <div className="hidden md:flex flex-col items-center justify-center">
+            <h1
+              className="font-script leading-none mb-10"
+              style={{
+                fontSize: "clamp(80px, 8vw, 120px)",
+                color: "#f5f0e8",
+                textShadow: "0 4px 60px rgba(201,168,76,0.2)",
+              }}
+            >
+              {groomNickname} &amp; {brideNickname}
+            </h1>
+
+            {/* Original Divider Line (Desktop Only) */}
+            <div id="ht-line-desktop" className="mb-10">
+              <svg width="240" height="8" viewBox="0 0 240 8" fill="none">
+                <line
+                  x1="0"
+                  y1="4"
+                  x2="108"
+                  y2="4"
+                  stroke="#C9A84C"
+                  strokeWidth="0.8"
+                />
+                <circle cx="120" cy="4" r="3" fill="#C9A84C" />
+                <line
+                  x1="132"
+                  y1="4"
+                  x2="240"
+                  y2="4"
+                  stroke="#C9A84C"
+                  strokeWidth="0.8"
+                />
+              </svg>
+            </div>
+          </div>
         </div>
 
         {/* ── COUNTDOWN ── */}
