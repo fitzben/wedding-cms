@@ -82,122 +82,6 @@ const STATUS = {
   },
 };
 
-// ─── Countdown to stream ──────────────────────────────────────────────────────
-function useStreamCountdown(startStr) {
-  const calc = () => {
-    if (!startStr) return null;
-    const diff = new Date(startStr).getTime() - Date.now();
-    if (diff <= 0) return null;
-    return {
-      days: Math.floor(diff / 86400000),
-      hours: Math.floor((diff % 86400000) / 3600000),
-      minutes: Math.floor((diff % 3600000) / 60000),
-      seconds: Math.floor((diff % 60000) / 1000),
-    };
-  };
-  const [t, setT] = useState(calc);
-  useEffect(() => {
-    if (!startStr) return;
-    const id = setInterval(() => setT(calc()), 1000);
-    return () => clearInterval(id);
-  }, [startStr]);
-  return t;
-}
-
-// ─── Countdown display ────────────────────────────────────────────────────────
-function CountdownUnit({ value, label, delay }) {
-  const pad = String(value).padStart(2, "0");
-  return (
-    <div
-      className="ls-countdown-unit flex flex-col items-center gap-2"
-      style={{ animationDelay: delay }}
-    >
-      <div
-        style={{
-          width: "clamp(54px, 9vw, 78px)",
-          height: "clamp(60px, 10vw, 86px)",
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(201,168,76,0.2)",
-          borderRadius: 8,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backdropFilter: "blur(8px)",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {/* Sheen */}
-        <div
-          style={{
-            position: "absolute",
-            inset: 0,
-            background:
-              "linear-gradient(160deg, rgba(255,255,255,0.06) 0%, transparent 60%)",
-            pointerEvents: "none",
-          }}
-        />
-        {/* Mid line */}
-        <div
-          style={{
-            position: "absolute",
-            left: 8,
-            right: 8,
-            top: "50%",
-            height: 1,
-            background: "rgba(201,168,76,0.15)",
-          }}
-        />
-        <span
-          style={{
-            fontFamily: "Georgia, serif",
-            fontStyle: "italic",
-            fontSize: "clamp(26px, 4.5vw, 42px)",
-            color: "#f5f0e8",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {pad}
-        </span>
-      </div>
-      <p
-        style={{
-          fontSize: 9,
-          letterSpacing: "0.3em",
-          textTransform: "uppercase",
-          color: "rgba(201,168,76,0.45)",
-          fontFamily: "Georgia, serif",
-        }}
-      >
-        {label}
-      </p>
-    </div>
-  );
-}
-
-function Sep() {
-  return (
-    <div className="flex flex-col gap-1 pb-7">
-      <div
-        style={{
-          width: 3,
-          height: 3,
-          borderRadius: "50%",
-          background: "rgba(201,168,76,0.35)",
-        }}
-      />
-      <div
-        style={{
-          width: 3,
-          height: 3,
-          borderRadius: "50%",
-          background: "rgba(201,168,76,0.15)",
-        }}
-      />
-    </div>
-  );
-}
-
 // ─── YouTube embed URL builder ────────────────────────────────────────────────
 function getYtId(url) {
   if (!url) return null;
@@ -236,7 +120,6 @@ const LiveStream = ({ settings }) => {
 
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, amount: 0.2 });
-  const countdown = useStreamCountdown(stream_start);
 
   const [status, setStatus] = useState("upcoming");
 
@@ -651,9 +534,9 @@ const LiveStream = ({ settings }) => {
           style={{
             textAlign: "center",
             marginTop: "4rem",
-            fontSize: 10,
+            fontSize: 14,
             letterSpacing: "0.2em",
-            color: "rgba(255,255,255,0.45)",
+            color: "rgba(255,255,255,0.55)",
             fontFamily: "Georgia, serif",
             fontStyle: "italic",
           }}
