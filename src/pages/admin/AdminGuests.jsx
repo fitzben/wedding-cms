@@ -543,9 +543,7 @@ function CategoryBadge({ value }) {
   };
   const cls = map[value] || map.friend;
   return (
-    <span
-      className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${cls}`}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize border whitespace-nowrap ${cls}`}>
       {value || "Friend"}
     </span>
   );
@@ -560,9 +558,7 @@ function PriorityBadge({ value }) {
   };
   const { cls, icon } = map[value] || map.medium;
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${cls}`}
-    >
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold capitalize border whitespace-nowrap ${cls}`}>
       <span className="text-[10px] leading-none">{icon}</span>
       {value || "Medium"}
     </span>
@@ -578,9 +574,7 @@ function ImportanceBadge({ value }) {
   };
   const cls = map[value] || map.normal;
   return (
-    <span
-      className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${cls}`}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border whitespace-nowrap ${cls}`}>
       {value || "Normal"}
     </span>
   );
@@ -604,9 +598,7 @@ function InvitationTypeBadge({ value }) {
   };
   const { cls, label } = map[value] || map.digital;
   return (
-    <span
-      className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${cls}`}>
       {label}
     </span>
   );
@@ -617,7 +609,7 @@ function EventAccessBadge({ access, isOverride = false }) {
   const map = {
     both: {
       cls: "bg-indigo-50 text-indigo-600 border-indigo-100",
-      label: "HM + Resepsi",
+      label: "HM+Resepsi",
       icon: "🎊",
     },
     hm_only: {
@@ -627,18 +619,19 @@ function EventAccessBadge({ access, isOverride = false }) {
     },
     resepsi_only: {
       cls: "bg-rose-50 text-rose-600 border-rose-100",
-      label: "Resepsi Only",
+      label: "Resepsi",
       icon: "🥂",
     },
   };
   const { cls, label, icon } = map[access] || map.both;
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}
+      title={isOverride ? `${label} (override)` : label}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${cls}`}
     >
       {icon} {label}
       {isOverride && (
-        <span className="opacity-60 text-[9px] ml-0.5">override</span>
+        <span className="opacity-50 text-[9px]">*</span>
       )}
     </span>
   );
@@ -1279,7 +1272,7 @@ export const AdminGuests = () => {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="py-3.5 px-4 w-10">
+                  <th className="py-2.5 px-3 w-10">
                     <input
                       type="checkbox"
                       checked={allSelected}
@@ -1287,39 +1280,17 @@ export const AdminGuests = () => {
                       className="w-4 h-4 rounded border-gray-300 accent-gray-900 cursor-pointer"
                     />
                   </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Group
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Importance
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">
-                    Pax
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Undangan
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Akses Acara
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Notes
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">
-                    Actions
-                  </th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Name</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Phone</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Group</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Cat.</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Priority</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">IMP</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">Pax</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Undangan</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Akses</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">Note</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1403,7 +1374,7 @@ export const AdminGuests = () => {
                         ${isDeleted ? "bg-red-50/40 opacity-60" : selected.has(guest.id) ? "bg-gray-50" : "hover:bg-gray-50/60"}`}
                       >
                         {/* Checkbox */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <input
                             type="checkbox"
                             checked={selected.has(guest.id)}
@@ -1413,36 +1384,39 @@ export const AdminGuests = () => {
                         </td>
 
                         {/* Name + slug */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
-                            {guest.display_name}
+                        <td className="py-2 px-3 max-w-[160px]">
+                          <div className="font-semibold text-gray-900 text-sm flex items-center gap-1.5 flex-wrap leading-tight">
+                            <span className="truncate">{guest.display_name}</span>
                             {isDeleted && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-500 border border-red-200">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-500 border border-red-200 shrink-0">
                                 deleted
                               </span>
                             )}
                             {!isDeleted && guest.invite_status === "sent" && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-200">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0">
                                 ✓ sent
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-400 mt-0.5 font-mono">
+                          <div className="text-[10px] text-gray-400 mt-0.5 font-mono truncate">
                             {guest.slug}
                           </div>
                         </td>
 
                         {/* Phone */}
-                        <td className="py-3.5 px-4 text-gray-500 whitespace-nowrap">
+                        <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap">
                           {guest.phone_number || (
                             <span className="text-gray-300">—</span>
                           )}
                         </td>
 
                         {/* Group */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3 max-w-[120px]">
                           {groupName ? (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100">
+                            <span
+                              title={groupName}
+                              className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 whitespace-nowrap block truncate max-w-[110px]"
+                            >
                               {groupName}
                             </span>
                           ) : (
@@ -1451,56 +1425,58 @@ export const AdminGuests = () => {
                         </td>
 
                         {/* Category */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <CategoryBadge value={guest.category} />
                         </td>
 
                         {/* Priority */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <PriorityBadge value={guest.priority} />
                         </td>
 
                         {/* Importance */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <ImportanceBadge value={guest.importance} />
                         </td>
 
                         {/* Pax */}
-                        <td className="py-3.5 px-4 text-center">
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-700 text-xs font-bold border border-gray-200">
+                        <td className="py-2 px-3 text-center">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-700 text-xs font-bold border border-gray-200">
                             {guest.pax_allowed}
                           </span>
                         </td>
 
                         {/* Undangan */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <InvitationTypeBadge value={guest.invitation_type} />
                         </td>
 
                         {/* Akses Acara */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <EventAccessBadge
                             access={guest.resolved_event_access || "both"}
                             isOverride={!!guest.event_access_override}
                           />
                         </td>
 
-                        {/* Notes */}
-                        <td className="py-3.5 px-4 max-w-[150px]">
+                        {/* Notes — icon-only with tooltip */}
+                        <td className="py-2 px-3 text-center">
                           {guest.notes ? (
-                            <div
-                              className="text-xs text-gray-500 line-clamp-1 truncate"
+                            <span
                               title={guest.notes}
+                              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 border border-amber-200 text-amber-500 cursor-default"
                             >
-                              {guest.notes}
-                            </div>
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </span>
                           ) : (
                             <span className="text-gray-200">—</span>
                           )}
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <div className="flex items-center justify-end gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
                             {isDeleted ? (
                               isAdmin && (
