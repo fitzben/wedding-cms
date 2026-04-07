@@ -55,6 +55,8 @@ const EMPTY_FORM = {
   guest_group_id: "",
   invitation_type: "digital",
   event_access_override: "", // '' = inherit from group
+  enable_display_name: false,
+  display_name: "",
 };
 
 const EVENT_ACCESS_OPTIONS = [
@@ -90,6 +92,8 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
               guest_group_id: initial.guest_group_id || "",
               invitation_type: initial.invitation_type || "digital",
               event_access_override: initial.event_access_override || "",
+              enable_display_name: initial.enable_display_name || false,
+              display_name: initial.display_name || "",
             }
           : EMPTY_FORM,
       );
@@ -212,6 +216,63 @@ function GuestModal({ open, onClose, onSave, initial, groups }) {
               )}
             </div>
           </div>
+
+          {/* Custom Display Name Toggle */}
+          <div className="bg-gray-50 rounded-2xl p-4 border border-gray-100 flex items-center justify-between transition-all hover:bg-gray-100/50">
+            <div className="flex gap-3 items-center">
+              <div className="w-10 h-10 rounded-xl bg-white shadow-sm flex items-center justify-center text-xl">
+                🏷️
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">
+                  Custom Display Name?
+                </p>
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  Tampilkan nama khusus di undangan
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setForm((p) => ({
+                  ...p,
+                  enable_display_name: !p.enable_display_name,
+                  // Auto-fill if enabling for the first time
+                  display_name:
+                    !p.enable_display_name && !p.display_name
+                      ? `${p.first_name} ${p.last_name}`.trim()
+                      : p.display_name,
+                }))
+              }
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-offset-2 focus:ring-2 focus:ring-gray-100
+                ${form.enable_display_name ? "bg-gray-900" : "bg-gray-200"}`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+                  ${form.enable_display_name ? "translate-x-6" : "translate-x-1"}`}
+              />
+            </button>
+          </div>
+
+          {/* Conditional Display Name Input */}
+          {form.enable_display_name && (
+            <div className="pt-2 border-t border-gray-50 mt-2 transition-all duration-300">
+              <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+                Display Name (Untuk Undangan)
+              </label>
+              <input
+                {...field("display_name")}
+                placeholder="e.g. Budi Santoso & Partner"
+                className={`w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none transition-all bg-white
+                  ${errors.display_name ? "border-red-300 bg-red-50" : ""}`}
+              />
+              <p className="text-[11px] text-gray-400 mt-1.5 flex items-start gap-1">
+                <span>ℹ️</span> Ini adalah nama yang akan muncul di sambutan
+                "Dear, [Name]" di Home.
+              </p>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
@@ -482,9 +543,7 @@ function CategoryBadge({ value }) {
   };
   const cls = map[value] || map.friend;
   return (
-    <span
-      className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${cls}`}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold capitalize border whitespace-nowrap ${cls}`}>
       {value || "Friend"}
     </span>
   );
@@ -499,9 +558,7 @@ function PriorityBadge({ value }) {
   };
   const { cls, icon } = map[value] || map.medium;
   return (
-    <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold capitalize border ${cls}`}
-    >
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold capitalize border whitespace-nowrap ${cls}`}>
       <span className="text-[10px] leading-none">{icon}</span>
       {value || "Medium"}
     </span>
@@ -517,9 +574,7 @@ function ImportanceBadge({ value }) {
   };
   const cls = map[value] || map.normal;
   return (
-    <span
-      className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${cls}`}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border whitespace-nowrap ${cls}`}>
       {value || "Normal"}
     </span>
   );
@@ -543,9 +598,7 @@ function InvitationTypeBadge({ value }) {
   };
   const { cls, label } = map[value] || map.digital;
   return (
-    <span
-      className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}
-    >
+    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${cls}`}>
       {label}
     </span>
   );
@@ -556,7 +609,7 @@ function EventAccessBadge({ access, isOverride = false }) {
   const map = {
     both: {
       cls: "bg-indigo-50 text-indigo-600 border-indigo-100",
-      label: "HM + Resepsi",
+      label: "HM+Resepsi",
       icon: "🎊",
     },
     hm_only: {
@@ -566,18 +619,19 @@ function EventAccessBadge({ access, isOverride = false }) {
     },
     resepsi_only: {
       cls: "bg-rose-50 text-rose-600 border-rose-100",
-      label: "Resepsi Only",
+      label: "Resepsi",
       icon: "🥂",
     },
   };
   const { cls, label, icon } = map[access] || map.both;
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border ${cls}`}
+      title={isOverride ? `${label} (override)` : label}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${cls}`}
     >
       {icon} {label}
       {isOverride && (
-        <span className="opacity-60 text-[9px] ml-0.5">override</span>
+        <span className="opacity-50 text-[9px]">*</span>
       )}
     </span>
   );
@@ -685,7 +739,9 @@ export const AdminGuests = () => {
             <div>
               <h1 className="text-lg font-bold text-gray-900">Guests</h1>
               <p className="text-gray-400 text-xs mt-0.5">
-                {total} tamu{activeFilterCount > 0 ? ` · ${activeFilterCount} filter` : ""}{showDeleted ? " · deleted" : ""}
+                {total} tamu
+                {activeFilterCount > 0 ? ` · ${activeFilterCount} filter` : ""}
+                {showDeleted ? " · deleted" : ""}
               </p>
             </div>
             {isAdmin && !showDeleted && (
@@ -693,8 +749,18 @@ export const AdminGuests = () => {
                 onClick={openCreate}
                 className="flex items-center gap-1.5 px-3.5 py-2 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 4v16m8-8H4"
+                  />
                 </svg>
                 Add
               </button>
@@ -704,8 +770,18 @@ export const AdminGuests = () => {
           {/* Mobile second row: search + icon buttons */}
           <div className="flex items-center gap-2 md:hidden">
             <div className="relative flex-1">
-              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
               <input
                 type="text"
@@ -717,12 +793,25 @@ export const AdminGuests = () => {
             </div>
             {/* Deleted toggle */}
             <button
-              onClick={() => { setShowDeleted((v) => !v); setPage(1); }}
+              onClick={() => {
+                setShowDeleted((v) => !v);
+                setPage(1);
+              }}
               title={showDeleted ? "Show active" : "Show deleted"}
               className={`p-2.5 rounded-xl border flex-shrink-0 transition-all ${showDeleted ? "bg-red-50 border-red-200 text-red-500" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
               </svg>
             </button>
             {/* Filter toggle */}
@@ -730,8 +819,18 @@ export const AdminGuests = () => {
               onClick={() => setShowFilters((v) => !v)}
               className={`relative p-2.5 rounded-xl border flex-shrink-0 transition-all ${showFilters || activeFilterCount > 0 ? "bg-gray-900 border-gray-900 text-white" : "border-gray-200 text-gray-500 hover:bg-gray-50"}`}
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" />
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"
+                />
               </svg>
               {activeFilterCount > 0 && (
                 <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
@@ -745,8 +844,18 @@ export const AdminGuests = () => {
                 onClick={handleBulkDelete}
                 className="relative p-2.5 rounded-xl border border-red-100 bg-red-50 text-red-500 flex-shrink-0"
               >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
                 </svg>
                 <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
                   {selected.size}
@@ -927,7 +1036,6 @@ export const AdminGuests = () => {
               )}
             </div>
           </div>
-
         </div>
 
         {/* ── Filter Bar ── */}
@@ -938,40 +1046,92 @@ export const AdminGuests = () => {
             {/* Mobile: 2-col grid wrapper */}
             <div className="grid grid-cols-2 gap-3 w-full md:hidden">
               {[
-                { label: "Category", key: "category", opts: ["friend","family","colleague"] },
-                { label: "Priority", key: "priority", opts: ["low","medium","high"] },
-                { label: "Importance", key: "importance", opts: ["normal","vip","vvip"], upper: true },
-                { label: "Jenis Undangan", key: "invitation_type", custom: [
-                  { v: "digital", l: "📱 Digital" },
-                  { v: "physical", l: "✉️ Fisik" },
-                  { v: "both", l: "📱✉️ Keduanya" },
-                ]},
+                {
+                  label: "Category",
+                  key: "category",
+                  opts: ["friend", "family", "colleague"],
+                },
+                {
+                  label: "Priority",
+                  key: "priority",
+                  opts: ["low", "medium", "high"],
+                },
+                {
+                  label: "Importance",
+                  key: "importance",
+                  opts: ["normal", "vip", "vvip"],
+                  upper: true,
+                },
+                {
+                  label: "Jenis Undangan",
+                  key: "invitation_type",
+                  custom: [
+                    { v: "digital", l: "📱 Digital" },
+                    { v: "physical", l: "✉️ Fisik" },
+                    { v: "both", l: "📱✉️ Keduanya" },
+                  ],
+                },
               ].map(({ label, key, opts, upper, custom }) => (
                 <div key={key} className="flex flex-col gap-1">
-                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{label}</label>
-                  <select value={filters[key] ?? ""} onChange={(e) => setFilter(key, e.target.value)}
-                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all w-full">
+                  <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                    {label}
+                  </label>
+                  <select
+                    value={filters[key] ?? ""}
+                    onChange={(e) => setFilter(key, e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all w-full"
+                  >
                     <option value="">Semua</option>
                     {custom
-                      ? custom.map(({ v, l }) => <option key={v} value={v}>{l}</option>)
-                      : opts.map((o) => <option key={o} value={o}>{upper ? o.toUpperCase() : o.charAt(0).toUpperCase() + o.slice(1)}</option>)
-                    }
+                      ? custom.map(({ v, l }) => (
+                          <option key={v} value={v}>
+                            {l}
+                          </option>
+                        ))
+                      : opts.map((o) => (
+                          <option key={o} value={o}>
+                            {upper
+                              ? o.toUpperCase()
+                              : o.charAt(0).toUpperCase() + o.slice(1)}
+                          </option>
+                        ))}
                   </select>
                 </div>
               ))}
               <div className="flex flex-col gap-1 col-span-2">
-                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Group</label>
-                <select value={filters.guest_group_id ?? ""} onChange={(e) => setFilter("guest_group_id", e.target.value)}
-                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all w-full">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Group
+                </label>
+                <select
+                  value={filters.guest_group_id ?? ""}
+                  onChange={(e) => setFilter("guest_group_id", e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all w-full"
+                >
                   <option value="">Semua Group</option>
-                  {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               {activeFilterCount > 0 && (
-                <button onClick={clearFilters}
-                  className="col-span-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-semibold">
-                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                <button
+                  onClick={clearFilters}
+                  className="col-span-2 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-semibold"
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                   Reset filter
                 </button>
@@ -980,121 +1140,122 @@ export const AdminGuests = () => {
 
             {/* Desktop: original flex-wrap layout */}
             <div className="hidden md:flex flex-wrap gap-3 items-end w-full">
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                Category
-              </label>
-              <select
-                value={filters.category}
-                onChange={(e) => setFilter("category", e.target.value)}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
-              >
-                <option value="">Semua</option>
-                {["friend", "family", "colleague"].map((c) => (
-                  <option key={c} value={c}>
-                    {c.charAt(0).toUpperCase() + c.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Priority */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                Priority
-              </label>
-              <select
-                value={filters.priority}
-                onChange={(e) => setFilter("priority", e.target.value)}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
-              >
-                <option value="">Semua</option>
-                {["low", "medium", "high"].map((p) => (
-                  <option key={p} value={p}>
-                    {p.charAt(0).toUpperCase() + p.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Importance */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                Importance
-              </label>
-              <select
-                value={filters.importance}
-                onChange={(e) => setFilter("importance", e.target.value)}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
-              >
-                <option value="">Semua</option>
-                {["normal", "vip", "vvip"].map((i) => (
-                  <option key={i} value={i}>
-                    {i.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Guest Group */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                Group
-              </label>
-              <select
-                value={filters.guest_group_id}
-                onChange={(e) => setFilter("guest_group_id", e.target.value)}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all max-w-[180px]"
-              >
-                <option value="">Semua Group</option>
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Invitation Type */}
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-                Jenis Undangan
-              </label>
-              <select
-                value={filters.invitation_type}
-                onChange={(e) => setFilter("invitation_type", e.target.value)}
-                className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
-              >
-                <option value="">Semua</option>
-                <option value="digital">📱 Digital</option>
-                <option value="physical">✉️ Fisik</option>
-                <option value="both">📱✉️ Keduanya</option>
-              </select>
-            </div>
-
-            {/* Clear filters */}
-            {activeFilterCount > 0 && (
-              <button
-                onClick={clearFilters}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-all self-end"
-              >
-                <svg
-                  className="w-3.5 h-3.5"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Category
+                </label>
+                <select
+                  value={filters.category}
+                  onChange={(e) => setFilter("category", e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Reset filter
-              </button>
-            )}
-            </div>{/* end desktop filter wrapper */}
+                  <option value="">Semua</option>
+                  {["friend", "family", "colleague"].map((c) => (
+                    <option key={c} value={c}>
+                      {c.charAt(0).toUpperCase() + c.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Priority */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Priority
+                </label>
+                <select
+                  value={filters.priority}
+                  onChange={(e) => setFilter("priority", e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
+                >
+                  <option value="">Semua</option>
+                  {["low", "medium", "high"].map((p) => (
+                    <option key={p} value={p}>
+                      {p.charAt(0).toUpperCase() + p.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Importance */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Importance
+                </label>
+                <select
+                  value={filters.importance}
+                  onChange={(e) => setFilter("importance", e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
+                >
+                  <option value="">Semua</option>
+                  {["normal", "vip", "vvip"].map((i) => (
+                    <option key={i} value={i}>
+                      {i.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Guest Group */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Group
+                </label>
+                <select
+                  value={filters.guest_group_id}
+                  onChange={(e) => setFilter("guest_group_id", e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all max-w-[180px]"
+                >
+                  <option value="">Semua Group</option>
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Invitation Type */}
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                  Jenis Undangan
+                </label>
+                <select
+                  value={filters.invitation_type}
+                  onChange={(e) => setFilter("invitation_type", e.target.value)}
+                  className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
+                >
+                  <option value="">Semua</option>
+                  <option value="digital">📱 Digital</option>
+                  <option value="physical">✉️ Fisik</option>
+                  <option value="both">📱✉️ Keduanya</option>
+                </select>
+              </div>
+
+              {/* Clear filters */}
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={clearFilters}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100 transition-all self-end"
+                >
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  Reset filter
+                </button>
+              )}
+            </div>
+            {/* end desktop filter wrapper */}
           </div>
         </div>
 
@@ -1111,7 +1272,7 @@ export const AdminGuests = () => {
             <table className="w-full text-left border-collapse text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-100">
-                  <th className="py-3.5 px-4 w-10">
+                  <th className="py-2.5 px-3 w-10">
                     <input
                       type="checkbox"
                       checked={allSelected}
@@ -1119,39 +1280,17 @@ export const AdminGuests = () => {
                       className="w-4 h-4 rounded border-gray-300 accent-gray-900 cursor-pointer"
                     />
                   </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Phone
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Group
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Priority
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Importance
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">
-                    Pax
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Undangan
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Akses Acara
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider">
-                    Notes
-                  </th>
-                  <th className="py-3.5 px-4 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">
-                    Actions
-                  </th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Name</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Phone</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Group</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Cat.</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Priority</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">IMP</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">Pax</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Undangan</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Akses</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">Note</th>
+                  <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -1235,7 +1374,7 @@ export const AdminGuests = () => {
                         ${isDeleted ? "bg-red-50/40 opacity-60" : selected.has(guest.id) ? "bg-gray-50" : "hover:bg-gray-50/60"}`}
                       >
                         {/* Checkbox */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <input
                             type="checkbox"
                             checked={selected.has(guest.id)}
@@ -1245,36 +1384,39 @@ export const AdminGuests = () => {
                         </td>
 
                         {/* Name + slug */}
-                        <td className="py-3.5 px-4">
-                          <div className="font-semibold text-gray-900 flex items-center gap-2 flex-wrap">
-                            {guest.display_name}
+                        <td className="py-2 px-3 max-w-[160px]">
+                          <div className="font-semibold text-gray-900 text-sm flex items-center gap-1.5 flex-wrap leading-tight">
+                            <span className="truncate">{guest.display_name}</span>
                             {isDeleted && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-500 border border-red-200">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-500 border border-red-200 shrink-0">
                                 deleted
                               </span>
                             )}
                             {!isDeleted && guest.invite_status === "sent" && (
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-200">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0">
                                 ✓ sent
                               </span>
                             )}
                           </div>
-                          <div className="text-xs text-gray-400 mt-0.5 font-mono">
+                          <div className="text-[10px] text-gray-400 mt-0.5 font-mono truncate">
                             {guest.slug}
                           </div>
                         </td>
 
                         {/* Phone */}
-                        <td className="py-3.5 px-4 text-gray-500 whitespace-nowrap">
+                        <td className="py-2 px-3 text-xs text-gray-500 whitespace-nowrap">
                           {guest.phone_number || (
                             <span className="text-gray-300">—</span>
                           )}
                         </td>
 
                         {/* Group */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3 max-w-[120px]">
                           {groupName ? (
-                            <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100">
+                            <span
+                              title={groupName}
+                              className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 whitespace-nowrap block truncate max-w-[110px]"
+                            >
                               {groupName}
                             </span>
                           ) : (
@@ -1283,56 +1425,58 @@ export const AdminGuests = () => {
                         </td>
 
                         {/* Category */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <CategoryBadge value={guest.category} />
                         </td>
 
                         {/* Priority */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <PriorityBadge value={guest.priority} />
                         </td>
 
                         {/* Importance */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <ImportanceBadge value={guest.importance} />
                         </td>
 
                         {/* Pax */}
-                        <td className="py-3.5 px-4 text-center">
-                          <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-gray-100 text-gray-700 text-xs font-bold border border-gray-200">
+                        <td className="py-2 px-3 text-center">
+                          <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-700 text-xs font-bold border border-gray-200">
                             {guest.pax_allowed}
                           </span>
                         </td>
 
                         {/* Undangan */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <InvitationTypeBadge value={guest.invitation_type} />
                         </td>
 
                         {/* Akses Acara */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <EventAccessBadge
                             access={guest.resolved_event_access || "both"}
                             isOverride={!!guest.event_access_override}
                           />
                         </td>
 
-                        {/* Notes */}
-                        <td className="py-3.5 px-4 max-w-[150px]">
+                        {/* Notes — icon-only with tooltip */}
+                        <td className="py-2 px-3 text-center">
                           {guest.notes ? (
-                            <div
-                              className="text-xs text-gray-500 line-clamp-1 truncate"
+                            <span
                               title={guest.notes}
+                              className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 border border-amber-200 text-amber-500 cursor-default"
                             >
-                              {guest.notes}
-                            </div>
+                              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </span>
                           ) : (
                             <span className="text-gray-200">—</span>
                           )}
                         </td>
 
                         {/* Actions */}
-                        <td className="py-3.5 px-4">
+                        <td className="py-2 px-3">
                           <div className="flex items-center justify-end gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity">
                             {isDeleted ? (
                               isAdmin && (
@@ -1514,8 +1658,12 @@ export const AdminGuests = () => {
             {!loading && guests.length > 0 && (
               <div className="flex items-center justify-between py-2 px-1">
                 <label className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer select-none">
-                  <input type="checkbox" checked={allSelected} onChange={toggleAll}
-                    className="w-4 h-4 rounded border-gray-300 accent-gray-900" />
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    className="w-4 h-4 rounded border-gray-300 accent-gray-900"
+                  />
                   Pilih semua
                 </label>
                 {selected.size > 0 && (
@@ -1528,27 +1676,62 @@ export const AdminGuests = () => {
 
             {loading ? (
               <div className="py-16 text-center flex flex-col items-center gap-3 text-gray-400">
-                <svg className="animate-spin w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                <svg
+                  className="animate-spin w-6 h-6"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
                 </svg>
                 <span className="text-sm">Loading guests…</span>
               </div>
             ) : guests.length === 0 ? (
               <div className="py-16 text-center flex flex-col items-center gap-3">
-                <svg className="w-12 h-12 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                <svg
+                  className="w-12 h-12 text-gray-200"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="1.5"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
                 </svg>
-                <p className="text-gray-400 text-sm">{search ? `Tidak ada tamu untuk "${search}"` : "Belum ada tamu."}</p>
+                <p className="text-gray-400 text-sm">
+                  {search
+                    ? `Tidak ada tamu untuk "${search}"`
+                    : "Belum ada tamu."}
+                </p>
                 {!search && isAdmin && (
-                  <button onClick={openCreate} className="text-sm font-semibold text-gray-900 underline underline-offset-2">
+                  <button
+                    onClick={openCreate}
+                    className="text-sm font-semibold text-gray-900 underline underline-offset-2"
+                  >
                     Tambah tamu pertama →
                   </button>
                 )}
               </div>
             ) : (
               guests.map((guest) => {
-                const groupName = groups.find((g) => g.id === guest.guest_group_id)?.name;
+                const groupName = groups.find(
+                  (g) => g.id === guest.guest_group_id,
+                )?.name;
                 const isDeleted = !!guest.deleted_at;
                 const isSelected = selected.has(guest.id);
                 const isSent = guest.invite_status === "sent";
@@ -1558,11 +1741,12 @@ export const AdminGuests = () => {
                     key={guest.id}
                     onClick={() => toggleOne(guest.id)}
                     className={`rounded-2xl border transition-all active:scale-[0.99] overflow-hidden
-                      ${isDeleted
-                        ? "bg-red-50/30 border-red-100 opacity-70"
-                        : isSelected
-                          ? "bg-gray-50 border-gray-300 shadow-sm"
-                          : "bg-white border-gray-100 shadow-sm"
+                      ${
+                        isDeleted
+                          ? "bg-red-50/30 border-red-100 opacity-70"
+                          : isSelected
+                            ? "bg-gray-50 border-gray-300 shadow-sm"
+                            : "bg-white border-gray-100 shadow-sm"
                       }`}
                   >
                     {/* Card body */}
@@ -1572,34 +1756,49 @@ export const AdminGuests = () => {
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={(e) => { e.stopPropagation(); toggleOne(guest.id); }}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            toggleOne(guest.id);
+                          }}
                           onClick={(e) => e.stopPropagation()}
                           className="mt-1 w-4 h-4 rounded border-gray-300 accent-gray-900 cursor-pointer flex-shrink-0"
                         />
 
                         {/* Avatar */}
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border
-                          ${isDeleted ? "bg-red-50 border-red-200 text-red-400" : "bg-gray-100 border-gray-200 text-gray-600"}`}>
+                        <div
+                          className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 border
+                          ${isDeleted ? "bg-red-50 border-red-200 text-red-400" : "bg-gray-100 border-gray-200 text-gray-600"}`}
+                        >
                           {(guest.display_name || "?").charAt(0).toUpperCase()}
                         </div>
 
                         {/* Info */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-bold text-gray-900 text-sm leading-tight">{guest.display_name}</span>
+                            <span className="font-bold text-gray-900 text-sm leading-tight">
+                              {guest.display_name}
+                            </span>
                             {isDeleted && (
-                              <span className="text-[9px] font-bold uppercase tracking-wide text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">deleted</span>
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-red-500 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">
+                                deleted
+                              </span>
                             )}
                             {!isDeleted && isSent && (
-                              <span className="text-[9px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">✓ sent</span>
+                              <span className="text-[9px] font-bold uppercase tracking-wide text-emerald-600 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                                ✓ sent
+                              </span>
                             )}
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-gray-400">{guest.phone_number || "—"}</span>
+                            <span className="text-xs text-gray-400">
+                              {guest.phone_number || "—"}
+                            </span>
                             {groupName && (
                               <>
                                 <span className="text-gray-200">·</span>
-                                <span className="text-xs text-indigo-500 font-medium truncate max-w-[100px]">{groupName}</span>
+                                <span className="text-xs text-indigo-500 font-medium truncate max-w-[100px]">
+                                  {groupName}
+                                </span>
                               </>
                             )}
                           </div>
@@ -1610,7 +1809,9 @@ export const AdminGuests = () => {
                           <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-black text-gray-700">
                             {guest.pax_allowed}
                           </div>
-                          <span className="text-[9px] text-gray-400 mt-0.5">pax</span>
+                          <span className="text-[9px] text-gray-400 mt-0.5">
+                            pax
+                          </span>
                         </div>
                       </div>
 
@@ -1642,11 +1843,23 @@ export const AdminGuests = () => {
                       {isDeleted ? (
                         isAdmin && (
                           <button
-                            onClick={() => handleRestore(guest.id, guest.display_name)}
+                            onClick={() =>
+                              handleRestore(guest.id, guest.display_name)
+                            }
                             className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-xs font-bold border border-emerald-100"
                           >
-                            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            <svg
+                              className="w-3.5 h-3.5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                              />
                             </svg>
                             Restore
                           </button>
@@ -1654,41 +1867,102 @@ export const AdminGuests = () => {
                       ) : (
                         <>
                           {/* WA */}
-                          <button onClick={() => openWhatsApp(guest)} title="Kirim via WhatsApp"
-                            className="flex-1 flex items-center justify-center gap-1 py-2 bg-green-50 text-green-600 rounded-xl border border-green-100 text-xs font-semibold">
-                            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                          <button
+                            onClick={() => openWhatsApp(guest)}
+                            title="Kirim via WhatsApp"
+                            className="flex-1 flex items-center justify-center gap-1 py-2 bg-green-50 text-green-600 rounded-xl border border-green-100 text-xs font-semibold"
+                          >
+                            <svg
+                              className="w-3.5 h-3.5"
+                              viewBox="0 0 24 24"
+                              fill="currentColor"
+                            >
                               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
                               <path d="M12 0C5.373 0 0 5.373 0 12c0 2.121.554 4.11 1.523 5.837L.057 23.882a.5.5 0 00.61.61l6.045-1.466A11.944 11.944 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.9 0-3.7-.497-5.27-1.394l-.38-.22-3.933.954.97-3.934-.24-.392A9.96 9.96 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z" />
                             </svg>
                             WA
                           </button>
                           {/* Mark invited */}
-                          <button onClick={() => handleMarkInvited(guest)}
-                            title={isSent ? "Undo sent" : "Tandai sudah diundang"}
-                            className={`p-2.5 rounded-xl border transition-all ${isSent ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-100 text-gray-400 border-gray-200"}`}>
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <button
+                            onClick={() => handleMarkInvited(guest)}
+                            title={
+                              isSent ? "Undo sent" : "Tandai sudah diundang"
+                            }
+                            className={`p-2.5 rounded-xl border transition-all ${isSent ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-gray-100 text-gray-400 border-gray-200"}`}
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
                             </svg>
                           </button>
                           {/* Preview */}
-                          <a href={`/invite/${guest.slug}`} target="_blank" rel="noopener noreferrer"
-                            className="p-2.5 bg-gray-100 text-gray-500 rounded-xl border border-gray-200">
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          <a
+                            href={`/invite/${guest.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-2.5 bg-gray-100 text-gray-500 rounded-xl border border-gray-200"
+                          >
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                              />
                             </svg>
                           </a>
                           {isAdmin && (
                             <>
-                              <button onClick={() => openEdit(guest)}
-                                className="p-2.5 bg-gray-100 text-gray-500 rounded-xl border border-gray-200">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              <button
+                                onClick={() => openEdit(guest)}
+                                className="p-2.5 bg-gray-100 text-gray-500 rounded-xl border border-gray-200"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
                                 </svg>
                               </button>
-                              <button onClick={() => handleDelete(guest.id, guest.display_name)}
-                                className="p-2.5 bg-red-50 text-red-400 rounded-xl border border-red-100">
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              <button
+                                onClick={() =>
+                                  handleDelete(guest.id, guest.display_name)
+                                }
+                                className="p-2.5 bg-red-50 text-red-400 rounded-xl border border-red-100"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                  />
                                 </svg>
                               </button>
                             </>

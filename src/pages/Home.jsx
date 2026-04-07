@@ -23,12 +23,17 @@ import useAudioControl from "../hooks/useAudioControl";
 const Home = () => {
   const { guestSlug } = useParams();
   const { guest, loading, notFound } = useGuest(guestSlug);
+  console.log({ guest });
   const { settings, loading: settingsLoading } = useSettings();
   const audioRef = useAudioControl();
   const [invitationOpened, setInvitationOpened] = useState(false);
   const [transitionRendered, setTransitionRendered] = useState(false);
   const [transitionVisible, setTransitionVisible] = useState(false);
-  const guestName = guest?.display_name || "Guest Name";
+  const guestName = guest?.enable_display_name
+    ? guest.display_name
+    : guest
+      ? `${guest.first_name} ${guest.last_name}`.trim()
+      : "Guest Name";
 
   // Toggle flags (default true for safety if settings not loaded yet)
   const isRsvpEnabled = settings?.rsvp_enabled !== false;
@@ -72,7 +77,7 @@ const Home = () => {
       <div className="min-h-screen bg-ivory flex items-center justify-center p-6 text-center relative overflow-hidden">
         {/* Aesthetic Background Texture */}
         <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
-        
+
         {/* Animated Background Elements */}
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-gold/5 rounded-full blur-[120px] animate-pulse" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-maroon/5 rounded-full blur-[120px] animate-pulse-slow" />
@@ -80,20 +85,29 @@ const Home = () => {
         <div className="max-w-md relative z-10 space-y-8 fade-in show">
           <div className="flex flex-col items-center">
             <div className="w-20 h-20 rounded-full border border-maroon/20 flex items-center justify-center mb-6">
-              <svg className="w-8 h-8 text-maroon/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <svg
+                className="w-8 h-8 text-maroon/40"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
                 <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" />
                 <path d="M12 8V12" />
                 <path d="M12 16H12.01" />
               </svg>
             </div>
-            <h1 className="font-serif text-4xl text-maroon italic">Invitation Not Found</h1>
+            <h1 className="font-serif text-4xl text-maroon italic">
+              Invitation Not Found
+            </h1>
             <div className="w-12 h-px bg-gold my-6" />
             <p className="text-charcoal/60 font-light leading-relaxed">
-              We couldn't find an invitation matching this link. Please ensure the URL is correct or contact the couple for assistance.
+              We couldn't find an invitation matching this link. Please ensure
+              the URL is correct or contact the couple for assistance.
             </p>
           </div>
 
-          <a 
+          <a
             href="/"
             className="inline-block px-8 py-3 bg-maroon text-ivory rounded-full text-sm font-medium tracking-widest hover:bg-maroon/90 transition-all shadow-lg shadow-maroon/20"
           >
