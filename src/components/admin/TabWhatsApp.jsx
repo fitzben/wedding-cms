@@ -8,9 +8,13 @@ const WA_VARIABLES = [
   "{nama}",
   "{link}",
   "{tanggal_hm}",
-  "{tanggal_resepsi}",
-  "{venue_resepsi}",
+  "{waktu_hm}",
   "{venue_holy_matrimony}",
+  "{hm_maps_url}",
+  "{tanggal_resepsi}",
+  "{waktu_resepsi}",
+  "{venue_resepsi}",
+  "{resepsi_maps_url}",
 ];
 
 export function TabWhatsApp({ settings, onChange, onSave, saving }) {
@@ -60,10 +64,14 @@ export function TabWhatsApp({ settings, onChange, onSave, saving }) {
             {(settings.wa_template || "")
               .replace("{nama}", "Budi Santoso")
               .replace("{link}", "https://undangan.com/invite/budi")
-              .replace("{tanggal_hm}", "12 Juli 2025")
-              .replace("{tanggal_resepsi}", "12 Juli 2025")
+              .replace("{tanggal_hm}", "Minggu, 31 Mei 2026\n09.00 - 11.00 WIB")
+              .replace("{waktu_hm}", "09.00 - 11.00 WIB")
+              .replace("{tanggal_resepsi}", "Minggu, 31 Mei 2026\n12.00 - 15.00 WIB")
+              .replace("{waktu_resepsi}", "12.00 - 15.00 WIB")
               .replace("{venue_resepsi}", "Ballroom The Ritz Carlton")
-              .replace("{venue_holy_matrimony}", "Gereja Santa Maria") || (
+              .replace("{venue_holy_matrimony}", "Gereja Santa Maria")
+              .replace("{hm_maps_url}", "https://maps.google.com")
+              .replace("{resepsi_maps_url}", "https://maps.google.com") || (
               <span className="text-gray-400 italic">Template kosong</span>
             )}
           </div>
