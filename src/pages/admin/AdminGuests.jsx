@@ -705,6 +705,7 @@ export const AdminGuests = () => {
     handleDelete,
     handleRestore,
     copyLink,
+    copyLinkWithMessage,
     openWhatsApp,
     handleMarkInvited,
     totalPages,
@@ -714,9 +715,45 @@ export const AdminGuests = () => {
     isAdmin,
   } = useAdminGuests();
 
+  const [copyMenu, setCopyMenu] = useState(null); // { guest, x, y } or null
+  const openCopyMenu = (e, guest) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCopyMenu({ guest, x: rect.right, y: rect.bottom + 4 });
+  };
+
   return (
     <>
       <Toast toasts={toasts} />
+
+      {/* Copy popover — fixed so not clipped by overflow-x-auto */}
+      {copyMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setCopyMenu(null)} />
+          <div
+            className="fixed z-50 bg-white border border-gray-100 rounded-xl shadow-xl py-1 w-44"
+            style={{ top: copyMenu.y, right: window.innerWidth - copyMenu.x }}
+          >
+            <button
+              onClick={() => { copyLink(copyMenu.guest.slug); setCopyMenu(null); }}
+              className="w-full px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 text-left"
+            >
+              <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+              </svg>
+              Link saja
+            </button>
+            <button
+              onClick={() => { copyLinkWithMessage(copyMenu.guest); setCopyMenu(null); }}
+              className="w-full px-4 py-2 text-xs text-gray-700 hover:bg-gray-50 flex items-center gap-2 text-left"
+            >
+              <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+              </svg>
+              Link + Pesan WA
+            </button>
+          </div>
+        </>
+      )}
 
       <ConfirmDialog
         {...confirm}
@@ -1411,12 +1448,9 @@ export const AdminGuests = () => {
                         </td>
 
                         {/* Group */}
-                        <td className="py-2 px-3 max-w-[120px]">
+                        <td className="py-2 px-3">
                           {groupName ? (
-                            <span
-                              title={groupName}
-                              className="px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 whitespace-nowrap block truncate max-w-[110px]"
-                            >
+                            <span className="px-2 py-0.5 rounded-full text-[11px] leading-tight font-semibold bg-indigo-50 text-indigo-600 border border-indigo-100 inline-block max-w-[100px] break-words">
                               {groupName}
                             </span>
                           ) : (
@@ -1549,24 +1583,14 @@ export const AdminGuests = () => {
                                   </svg>
                                 </button>
 
-                                {/* Copy link */}
+                                {/* Copy — fixed popover */}
                                 <button
-                                  onClick={() => copyLink(guest.slug)}
-                                  title="Copy invitation link"
+                                  onClick={(e) => openCopyMenu(e, guest)}
+                                  title="Copy link"
                                   className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-all"
                                 >
-                                  <svg
-                                    className="w-4 h-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth="2"
-                                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                                    />
+                                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                   </svg>
                                 </button>
 
