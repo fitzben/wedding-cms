@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
+import { useInView } from "framer-motion";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { useJourney } from "../hooks/useJourney";
 import useSettings from "../hooks/useSettings";
@@ -11,6 +12,8 @@ const Journey = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const trackRef = useRef(null);
   const autoAdvanceRef = useRef(null);
+  const sectionRef = useRef(null);
+  const isSectionInView = useInView(sectionRef, { amount: 0.1 });
 
   // Ensure items are sorted by sort_order from BE
   const journeyData = [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
@@ -152,12 +155,13 @@ const Journey = () => {
 
   return (
     <section
+      ref={sectionRef}
       id="section-journey"
       className="py-32 relative overflow-hidden bg-white"
     >
       {/* ─── Aesthetic Background Layer ─── */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {isVideo ? (
+        {isVideo && isSectionInView ? (
           <div className="absolute inset-0 w-full h-full">
             <video
               autoPlay
@@ -290,6 +294,7 @@ const Journey = () => {
                       src={item.photo_url}
                       alt={item.title}
                       className="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
                     <div className="absolute inset-0 bg-gradient-to-br from-gold/15 via-transparent to-transparent opacity-60" />
