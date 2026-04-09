@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useInView } from "framer-motion";
 import { Icon } from "@iconify/react";
+import LogoLoader from "./LogoLoader";
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const STYLES = `
@@ -445,16 +446,22 @@ const LiveStream = ({ settings }) => {
                     LIVE · {new Date().getFullYear()}
                   </span>
                 </div>
-                {/* Iframe */}
-                <div className="aspect-video">
-                  <iframe
-                    src={embedUrl}
-                    title={stream_label || "Wedding Live Stream"}
-                    allowFullScreen
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    className="w-full h-full"
-                    frameBorder="0"
-                  />
+                {/* Iframe - Only load when section is in view */}
+                <div className="aspect-video bg-black/20">
+                  {isInView ? (
+                    <iframe
+                      src={embedUrl}
+                      title={stream_label || "Wedding Live Stream"}
+                      allowFullScreen
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      className="w-full h-full"
+                      frameBorder="0"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                       <LogoLoader size={48} />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

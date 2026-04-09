@@ -1,24 +1,33 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useParams } from "react-router-dom";
 import Hero from "../components/Hero";
 import Hashtag from "../components/Hashtag";
 import { BatakDivider, ManadoDivider } from "../components/Dividers";
-import CoupleIntro from "../components/CoupleIntro";
-import Journey from "../components/Journey";
-import EventDetails from "../components/EventDetails";
-import LiveStream from "../components/LiveStream";
-import DressCode from "../components/DressCode";
-import Gallery from "../components/Gallery";
-import RSVP from "../components/RSVP";
-import GiftRegistry from "../components/GiftRegistry";
-import Footer from "../components/Footer";
-import MusicPlayer from "../components/MusicPlayer";
-import CustomCursor from "../components/CustomCursor";
-import LoadingScreen from "../components/LoadingScreen";
-import LogoLoader from "../components/LogoLoader";
 import useGuest from "../hooks/useGuest";
 import useSettings from "../hooks/useSettings";
 import useAudioControl from "../hooks/useAudioControl";
+import CustomCursor from "../components/CustomCursor";
+import LoadingScreen from "../components/LoadingScreen";
+import LogoLoader from "../components/LogoLoader";
+
+// Lazy load sections below the fold
+const CoupleIntro = lazy(() => import("../components/CoupleIntro"));
+const Journey = lazy(() => import("../components/Journey"));
+const EventDetails = lazy(() => import("../components/EventDetails"));
+const LiveStream = lazy(() => import("../components/LiveStream"));
+const DressCode = lazy(() => import("../components/DressCode"));
+const Gallery = lazy(() => import("../components/Gallery"));
+const RSVP = lazy(() => import("../components/RSVP"));
+const GiftRegistry = lazy(() => import("../components/GiftRegistry"));
+const Footer = lazy(() => import("../components/Footer"));
+const MusicPlayer = lazy(() => import("../components/MusicPlayer"));
+
+// Placeholder for lazy-loaded sections
+const SectionLoader = () => (
+  <div className="py-20 flex items-center justify-center opacity-30">
+    <LogoLoader size={48} />
+  </div>
+);
 
 const Home = () => {
   const { guestSlug } = useParams();
@@ -29,6 +38,7 @@ const Home = () => {
   const [invitationOpened, setInvitationOpened] = useState(false);
   const [transitionRendered, setTransitionRendered] = useState(false);
   const [transitionVisible, setTransitionVisible] = useState(false);
+  const [audioSource, setAudioSource] = useState("");
   const guestName = guest?.enable_display_name
     ? guest.display_name
     : guest
@@ -122,7 +132,7 @@ const Home = () => {
     <div className="bg-offwhite text-charcoal font-sans antialiased selection:bg-maroon selection:text-offwhite relative overflow-x-hidden min-h-screen">
       <audio
         ref={audioRef}
-        src="https://res.cloudinary.com/dpsaoeync/video/upload/v1773335681/Unplanned_Melody_rfgslq.mp3"
+        src={audioSource}
         loop
       />
       <LoadingScreen isLoading={loading || settingsLoading} />
@@ -175,9 +185,17 @@ const Home = () => {
             }, 20);
 
             if (audioRef.current) {
-              audioRef.current
-                .play()
-                .catch((err) => console.warn("Audio play failed:", err));
+              // Set audio source only when opening invitation
+              if (!audioSource) {
+                setAudioSource("https://res.cloudinary.com/dpsaoeync/video/upload/v1773335681/Unplanned_Melody_rfgslq.mp3");
+              }
+              
+              // Use a slight delay to ensure source is set before playing
+              setTimeout(() => {
+                audioRef.current
+                  .play()
+                  .catch((err) => console.warn("Audio play failed:", err));
+              }, 100);
             }
           }}
         />
@@ -188,35 +206,44 @@ const Home = () => {
 
           <BatakDivider className="bg-ivory py-8" />
 
-          <CoupleIntro />
-          <Journey />
+          <Suspense fallback={<SectionLoader />}>
+            <CoupleIntro />
+            <Journey />
+          </Suspense>
 
           <BatakDivider className="bg-offwhite z-20 py-8 relative" />
 
-          <EventDetails eventAccess={eventAccess} settings={settings} />
-
-          <LiveStream settings={settings} />
-          <DressCode settings={settings} />
+          <Suspense fallback={<SectionLoader />}>
+            <EventDetails eventAccess={eventAccess} settings={settings} />
+            <LiveStream settings={settings} />
+            <DressCode settings={settings} />
+          </Suspense>
 
           <ManadoDivider className="bg-offwhite pt-[100px]" />
 
-          <Gallery />
-          {isRsvpEnabled && (
-            <RSVP
-              guest={guest}
-              guestName={guestName}
-              maxPax={guest?.pax_allowed || 2}
-            />
-          )}
+          <Suspense fallback={<SectionLoader />}>
+            <Gallery />
+            {isRsvpEnabled && (
+              <RSVP
+                guest={guest}
+                guestName={guestName}
+                maxPax={guest?.pax_allowed || 2}
+              />
+            )}
+          </Suspense>
 
           <ManadoDivider className="bg-ivory pt-[100px]" />
 
-          {isGiftEnabled && <GiftRegistry />}
-          <Footer />
+          <Suspense fallback={<SectionLoader />}>
+            {isGiftEnabled && <GiftRegistry />}
+            <Footer />
+          </Suspense>
         </main>
 
         {/* Persistent Floating Music Player */}
-        <MusicPlayer isVisible={invitationOpened} audioRef={audioRef} />
+        <Suspense fallback={null}>
+          <MusicPlayer isVisible={invitationOpened} audioRef={audioRef} />
+        </Suspense>
       </div>
     </div>
   );
