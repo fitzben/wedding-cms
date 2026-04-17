@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import usePermissions from "../../hooks/admin/usePermissions";
 import { TabWedding } from "../../components/admin/TabWeddingInfo";
 import { TabFeatures } from "../../components/admin/TabFeatures";
 import { TabUsers } from "../../components/admin/TabUsers";
@@ -20,6 +21,9 @@ export const API = {
   updateUser: (id, body) => apiClient.put(`/api/admin/users/${id}`, body),
   deleteUser: (id) => apiClient.delete(`/api/admin/users/${id}`),
 
+  getPermissions: () => apiClient.get("/api/admin/permissions"),
+  updatePermissions: (body) => apiClient.put("/api/admin/permissions", body),
+
   changePassword: (body) => apiClient.post("/api/admin/change-password", body),
 };
 
@@ -37,22 +41,30 @@ function useToast() {
 // ═══════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════════════════════════
-const TABS = [
-  { id: "wedding", label: "Wedding", icon: "💍" },
-  { id: "features", label: "Features", icon: "⚙️" },
-  { id: "users", label: "Users", icon: "👥" },
-  { id: "whatsapp", label: "WhatsApp", icon: "💬" },
-  { id: "livestream", label: "Live Stream", icon: "📺" },
-  { id: "dresscode", label: "Dress Code", icon: "👗" },
-  { id: "security", label: "Security", icon: "🔒" },
+const ALL_TABS = [
+  { id: "wedding",    label: "Wedding",     icon: "💍", resource: "settings.wedding" },
+  { id: "features",   label: "Features",    icon: "⚙️", resource: "settings.features" },
+  { id: "users",      label: "Users",       icon: "👥", resource: "settings.users" },
+  { id: "whatsapp",   label: "WhatsApp",    icon: "💬", resource: "settings.whatsapp" },
+  { id: "livestream", label: "Live Stream", icon: "📺", resource: "settings.livestream" },
+  { id: "dresscode",  label: "Dress Code",  icon: "👗", resource: "settings.dresscode" },
+  { id: "security",   label: "Security",    icon: "🔒", resource: "settings.security" },
 ];
 
 export const AdminSettings = () => {
-  const [activeTab, setActiveTab] = useState("wedding");
+  const { can } = usePermissions();
+  const TABS = ALL_TABS.filter((tab) => can(tab.resource));
+  const [activeTab, setActiveTab] = useState(() => TABS[0]?.id ?? "wedding");
   const [settings, setSettings] = useState({});
   const [loadingSettings, setLoadingSettings] = useState(true);
   const [saving, setSaving] = useState(false);
   const { toasts, push } = useToast();
+
+  useEffect(() => {
+    if (TABS.length > 0 && !TABS.find((t) => t.id === activeTab)) {
+      setActiveTab(TABS[0].id);
+    }
+  }, [TABS, activeTab]);
 
   // Load settings
   useEffect(() => {
