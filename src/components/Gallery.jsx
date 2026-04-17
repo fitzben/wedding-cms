@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Masonry from "react-masonry-css";
+import { useInView } from "framer-motion";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import {
   getGallerySections,
@@ -272,10 +273,14 @@ const Gallery = () => {
 
   // keep legacy alias so JSX refs below still work
   const hasExpandedOnce = expandStep >= 1;
+  const sectionRef = useRef(null);
+  const isSectionInView = useInView(sectionRef, { amount: 0.05, once: true });
 
   useScrollReveal([media, loading, expandStep, currentIndex]);
 
   useEffect(() => {
+    if (!isSectionInView) return;
+    
     const loadGallery = async () => {
       try {
         const sections = await getGallerySections();
@@ -292,7 +297,7 @@ const Gallery = () => {
       }
     };
     loadGallery();
-  }, []);
+  }, [isSectionInView]);
 
   // Mobile: 2 → 4 → carousel; Desktop: 3 → 6 → carousel
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
@@ -374,7 +379,11 @@ const Gallery = () => {
   };
 
   return (
-    <section id="section-gallery" className="pb-[100px] bg-offwhite relative">
+    <section 
+      ref={sectionRef}
+      id="section-gallery" 
+      className="pb-[100px] bg-offwhite relative"
+    >
       {/* Lightbox */}
       {lightbox.open && (
         <Lightbox

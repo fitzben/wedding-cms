@@ -22,6 +22,7 @@ const API = {
         ? { invitation_type: filters.invitation_type }
         : {}),
     });
+    if (filters.created_by) params.set("created_by", filters.created_by);
     const qs = params.toString();
     const cacheKey = `adminguests_${qs}`;
     return apiCache.fetch(cacheKey, () =>
@@ -79,6 +80,7 @@ const EMPTY_FILTERS = {
   importance: "",
   guest_group_id: "",
   invitation_type: "",
+  created_by: "",
 };
 
 export default function useAdminGuests() {
@@ -91,6 +93,7 @@ export default function useAdminGuests() {
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [groups, setGroups] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -112,11 +115,15 @@ export default function useAdminGuests() {
 
   const user = authService.getAdminUser();
   const isAdmin = user?.role === "admin" || user?.role === "parents";
+  const currentUserId = user?.user_id || "";
 
   // ── Load groups + WA template once ──
   useEffect(() => {
     GroupAPI.list()
       .then((r) => setGroups(r.groups || []))
+      .catch(() => {});
+    apiClient.get("/api/admin/users")
+      .then((r) => setAdminUsers(r.users || []))
       .catch(() => {});
     API.getSettings()
       .then((r) => {
@@ -127,6 +134,13 @@ export default function useAdminGuests() {
       })
       .catch(() => {});
   }, []);
+
+  // ── Auto-fill created_by filter when panel opens ──
+  useEffect(() => {
+    if (showFilters && !filters.created_by && currentUserId) {
+      setFilter("created_by", currentUserId);
+    }
+  }, [showFilters]);
 
   // ── Debounced search ──
   useEffect(() => {
@@ -277,40 +291,64 @@ export default function useAdminGuests() {
     const url = `${window.location.origin}/invite/${slug}`;
     navigator.clipboard
       .writeText(url)
-      .then(() => push("Invitation link copied!", "info"));
+      .then(() => push("Link berhasil disalin!", "info"));
   };
 
-  // Build WA URL — replaces {name} and {link} in the template from settings
+  // Format date string (YYYY-MM-DD) → "Minggu, 31 Mei 2026"
+  const formatTanggal = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr + "T00:00:00");
+    if (isNaN(d)) return dateStr;
+    return d.toLocaleDateString("id-ID", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  // Format time range (HH:MM, HH:MM) → "08.00 - 10.00 WIB"
+  const formatWaktu = (start, end) => {
+    const fmt = (t) => (t ? t.replace(":", ".") : "");
+    if (!start && !end) return "";
+    if (!end) return fmt(start) + " WIB";
+    return fmt(start) + " - " + fmt(end) + " WIB";
+  };
+
+  // Build the template message text (same logic as WA, for copy)
+  const buildMessage = (guest) => {
+    const inviteLink = `${window.location.origin}/invite/${guest.slug}`;
+    const name = guest.display_name || guest.first_name || "";
+    let message = waTemplate || `Halo {nama}, berikut link undangan pernikahan kami: {link}`;
+    return message
+      .replace(/\{nama\}/gi, name)
+      .replace(/\{link\}/gi, inviteLink)
+      .replace(/\{tanggal_hm\}/gi, [formatTanggal(settings.hm_date), formatWaktu(settings.hm_time_start, settings.hm_time_end)].filter(Boolean).join("\n"))
+      .replace(/\{waktu_hm\}/gi, formatWaktu(settings.hm_time_start, settings.hm_time_end))
+      .replace(/\{venue_holy_matrimony\}/gi, settings.hm_venue_name || "")
+      .replace(/\{tanggal_resepsi\}/gi, [formatTanggal(settings.resepsi_date), formatWaktu(settings.resepsi_time_start, settings.resepsi_time_end)].filter(Boolean).join("\n"))
+      .replace(/\{waktu_resepsi\}/gi, formatWaktu(settings.resepsi_time_start, settings.resepsi_time_end))
+      .replace(/\{venue_resepsi\}/gi, settings.resepsi_venue_name || "")
+      .replace(/\{hm_maps_url\}/gi, settings.hm_maps_url || "")
+      .replace(/\{resepsi_maps_url\}/gi, settings.resepsi_maps_url || "");
+  };
+
+  const copyLinkWithMessage = (guest) => {
+    const text = buildMessage(guest);
+    console.log(text)
+    navigator.clipboard
+      .writeText(text)
+      .then(() => push("Link + pesan berhasil disalin!", "info"));
+  };
+
+  // Build WA URL — uses buildMessage helper above
   const openWhatsApp = (guest) => {
     const phone = guest.phone_number?.replace(/\D/g, "");
     if (!phone) {
       push("Nomor HP tidak tersedia", "error");
       return;
     }
-    const inviteLink = `${window.location.origin}/invite/${guest.slug}`;
-    const name = guest.display_name || guest.first_name || "";
-
-    // Admin template supports variables shown in `TabWhatsApp.jsx`
-    let message =
-      waTemplate || `Halo {nama}, berikut link undangan pernikahan kami: {link}`;
-
-    message = message
-      .replace(/\{nama\}/gi, name)
-      .replace(/\{link\}/gi, inviteLink)
-      .replace(/\{tanggal_hm\}/gi, settings.hm_date || "")
-      .replace(
-        /\{venue_holy_matrimony\}/gi,
-        settings.hm_venue_name || "",
-      )
-      .replace(
-        /\{tanggal_resepsi\}/gi,
-        settings.resepsi_date || "",
-      )
-      .replace(
-        /\{venue_resepsi\}/gi,
-        settings.resepsi_venue_name || "",
-      );
-
+    const message = buildMessage(guest);
     const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, "_blank", "noopener,noreferrer");
   };
@@ -425,6 +463,7 @@ export default function useAdminGuests() {
     openWhatsApp,
     handleMarkInvited,
     copyLink,
+    copyLinkWithMessage,
 
     // toast + confirm
     toasts,
@@ -433,6 +472,8 @@ export default function useAdminGuests() {
 
     // permissions
     isAdmin,
+    currentUserId,
+    adminUsers,
   };
 }
 

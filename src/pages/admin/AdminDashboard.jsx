@@ -190,6 +190,9 @@ function RSVPBreakdown({ rsvp, loading }) {
     maybe = 0,
     total_guests = 0,
     total_pax = 0,
+    hm_only = 0,
+    resepsi_only = 0,
+    both_events = 0,
   } = rsvp || {};
   const total = attending + not_attending + maybe;
   const attendPct = total ? Math.round((attending / total) * 100) : 0;
@@ -278,6 +281,26 @@ function RSVPBreakdown({ rsvp, loading }) {
               </div>
             </div>
           </div>
+          {(hm_only > 0 || resepsi_only > 0 || both_events > 0) && (
+            <div className="mt-5 pt-4 border-t border-gray-50">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+                Kehadiran per Acara
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { label: "HM Only", value: hm_only, icon: "⛪", cls: "bg-sky-50 border-sky-100 text-sky-700" },
+                  { label: "Keduanya", value: both_events, icon: "🎊", cls: "bg-indigo-50 border-indigo-100 text-indigo-700" },
+                  { label: "Resepsi", value: resepsi_only, icon: "🥂", cls: "bg-rose-50 border-rose-100 text-rose-700" },
+                ].map(({ label, value, icon, cls }) => (
+                  <div key={label} className={`rounded-xl border p-3 text-center ${cls}`}>
+                    <div className="text-lg mb-0.5">{icon}</div>
+                    <div className="text-xl font-bold">{value}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-wide opacity-70 mt-0.5">{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

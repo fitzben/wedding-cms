@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import * as authService from "../../services/authService";
+import usePermissions from "../../hooks/admin/usePermissions";
 
 const NAV_ICONS = {
   Dashboard: (
@@ -150,26 +151,21 @@ export const AdminLayout = () => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const user = authService.getAdminUser();
-  const role = user?.role || "parents";
+  const { can } = usePermissions();
 
   const allNavItems = [
-    { name: "Dashboard", path: "/admin/dashboard", roles: ["admin"] },
-    { name: "Guests", path: "/admin/guests", roles: ["admin", "parents"] },
-    {
-      name: "Groups",
-      path: "/admin/guest-groups",
-      roles: ["admin", "parents"],
-    },
-    { name: "RSVP", path: "/admin/rsvp", roles: ["admin"] },
-    { name: "Wishes", path: "/admin/wishes", roles: ["admin"] },
-    { name: "Journey", path: "/admin/our-journey", roles: ["admin"] },
-    { name: "Gallery", path: "/admin/gallery", roles: ["admin"] },
-    { name: "Gifts", path: "/admin/gifts", roles: ["admin"] },
-    { name: "Settings", path: "/admin/settings", roles: ["admin"] },
+    { name: "Dashboard", key: "dashboard", path: "/admin/dashboard" },
+    { name: "Guests",    key: "guests",    path: "/admin/guests" },
+    { name: "Groups",    key: "groups",    path: "/admin/guest-groups" },
+    { name: "RSVP",      key: "rsvp",      path: "/admin/rsvp" },
+    { name: "Wishes",    key: "wishes",    path: "/admin/wishes" },
+    { name: "Journey",   key: "journey",   path: "/admin/our-journey" },
+    { name: "Gallery",   key: "gallery",   path: "/admin/gallery" },
+    { name: "Gifts",     key: "gifts",     path: "/admin/gifts" },
+    { name: "Settings",  key: "settings",  path: "/admin/settings" },
   ];
 
-  const navItems = allNavItems.filter((item) => item.roles.includes(role));
+  const navItems = allNavItems.filter((item) => can(item.key));
 
   const handleLogout = () => {
     authService.logout();

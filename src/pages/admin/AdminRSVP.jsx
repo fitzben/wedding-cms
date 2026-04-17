@@ -1,6 +1,21 @@
 import { useState, useEffect } from 'react';
 import { getRsvps } from '../../services/rsvpService';
 
+function EventAttendanceBadge({ value }) {
+  const map = {
+    both: { label: "HM + Resepsi", cls: "bg-indigo-50 text-indigo-600 border-indigo-100", icon: "🎊" },
+    hm_only: { label: "HM Only", cls: "bg-sky-50 text-sky-600 border-sky-100", icon: "⛪" },
+    resepsi_only: { label: "Resepsi Only", cls: "bg-rose-50 text-rose-600 border-rose-100", icon: "🥂" },
+  };
+  if (!value || !map[value]) return null;
+  const { label, cls, icon } = map[value];
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold border whitespace-nowrap ${cls}`}>
+      {icon} {label}
+    </span>
+  );
+}
+
 export const AdminRSVP = () => {
   const [rsvps, setRsvps] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -108,9 +123,12 @@ export const AdminRSVP = () => {
                       )}
                     </td>
                     <td className="py-4 px-6">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${getAttendanceStyle(rsvp.attendance)}`}>
-                        {rsvp.attendance}
-                      </span>
+                      <div className="flex flex-col gap-1.5">
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold capitalize whitespace-nowrap ${getAttendanceStyle(rsvp.attendance)}`}>
+                          {rsvp.attendance}
+                        </span>
+                        <EventAttendanceBadge value={rsvp.event_attendance} />
+                      </div>
                     </td>
                     <td className="py-4 px-6">
                       <div className="flex items-center">
@@ -148,9 +166,12 @@ export const AdminRSVP = () => {
                     <h3 className="font-bold text-gray-900 text-base">{rsvp.name}</h3>
                     <p className="text-[10px] text-gray-400 font-medium uppercase tracking-wider">{formatDate(rsvp.created_at)}</p>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getAttendanceStyle(rsvp.attendance)}`}>
-                    {rsvp.attendance}
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${getAttendanceStyle(rsvp.attendance)}`}>
+                      {rsvp.attendance}
+                    </span>
+                    <EventAttendanceBadge value={rsvp.event_attendance} />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 mb-4">

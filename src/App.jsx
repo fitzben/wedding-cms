@@ -22,7 +22,9 @@ import {
 
 const AdminIndexRedirect = () => {
   const user = authService.getAdminUser();
-  return <Navigate to={user?.role === 'parents' ? 'guests' : 'dashboard'} replace />;
+  // admin & partner → dashboard, parents → guests
+  const defaultPath = user?.role === 'parents' ? 'guests' : 'dashboard';
+  return <Navigate to={defaultPath} replace />;
 };
 
 function App() {
@@ -59,7 +61,7 @@ function App() {
           <Route
             path="dashboard"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute resource="dashboard">
                 <AdminDashboard />
               </ProtectedRoute>
             }
@@ -67,7 +69,7 @@ function App() {
           <Route
             path="guests"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'parents']}>
+              <ProtectedRoute resource="guests">
                 <AdminGuests />
               </ProtectedRoute>
             }
@@ -75,7 +77,7 @@ function App() {
           <Route
             path="rsvp"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute resource="rsvp">
                 <AdminRSVP />
               </ProtectedRoute>
             }
@@ -83,7 +85,7 @@ function App() {
           <Route
             path="gallery"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute resource="gallery">
                 <AdminGallery />
               </ProtectedRoute>
             }
@@ -91,7 +93,7 @@ function App() {
           <Route
             path="our-journey"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute resource="journey">
                 <AdminOurJourney />
               </ProtectedRoute>
             }
@@ -99,7 +101,7 @@ function App() {
           <Route
             path="guest-groups"
             element={
-              <ProtectedRoute allowedRoles={['admin', 'parents']}>
+              <ProtectedRoute resource="groups">
                 <AdminGuestGroups />
               </ProtectedRoute>
             }
@@ -107,7 +109,7 @@ function App() {
           <Route
             path="gifts"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute resource="gifts">
                 <AdminGifts />
               </ProtectedRoute>
             }
@@ -115,7 +117,7 @@ function App() {
           <Route
             path="wishes"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute resource="wishes">
                 <AdminWishes />
               </ProtectedRoute>
             }
@@ -123,7 +125,7 @@ function App() {
           <Route
             path="settings"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute resource="settings">
                 <AdminSettings />
               </ProtectedRoute>
             }

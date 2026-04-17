@@ -12,6 +12,156 @@ import {
 } from "./components";
 import { API } from "../../pages/admin";
 import LogoLoader from "../LogoLoader";
+import * as authService from "../../services/authService";
+
+// ═══════════════════════════════════════════════════════════════════════════════
+const MENU_RESOURCES = [
+  { key: "dashboard", label: "Dashboard",  icon: "🏠" },
+  { key: "guests",    label: "Guests",     icon: "👥" },
+  { key: "groups",    label: "Groups",     icon: "🗂️" },
+  { key: "rsvp",      label: "RSVP",       icon: "📋" },
+  { key: "wishes",    label: "Wishes",     icon: "💌" },
+  { key: "journey",   label: "Journey",    icon: "📍" },
+  { key: "gallery",   label: "Gallery",    icon: "🖼️" },
+  { key: "gifts",     label: "Gifts",      icon: "🎁" },
+  { key: "settings",  label: "Settings",   icon: "⚙️", isParent: true },
+];
+
+const SETTINGS_TABS = [
+  { key: "settings.wedding",    label: "Wedding",     icon: "💍" },
+  { key: "settings.features",   label: "Features",    icon: "🔧" },
+  { key: "settings.users",      label: "Users",       icon: "👤" },
+  { key: "settings.whatsapp",   label: "WhatsApp",    icon: "💬" },
+  { key: "settings.livestream", label: "Live Stream", icon: "📺" },
+  { key: "settings.dresscode",  label: "Dress Code",  icon: "👗" },
+  { key: "settings.security",   label: "Security",    icon: "🔒" },
+];
+
+function PermissionManager({ push }) {
+  const [permissions, setPermissions] = useState(null);
+  const [activeRole, setActiveRole] = useState("partner");
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    API.getPermissions()
+      .then((res) => setPermissions(res.permissions || {}))
+      .catch(() => push("Failed to load permissions", "error"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggle = (resource) => {
+    setPermissions((prev) => ({
+      ...prev,
+      [activeRole]: {
+        ...prev[activeRole],
+        [resource]: !prev[activeRole]?.[resource],
+      },
+    }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await API.updatePermissions({
+        role: activeRole,
+        permissions: permissions[activeRole] || {},
+      });
+      if (res.error) {
+        push(res.error, "error");
+        return;
+      }
+      push(`Permissions for ${activeRole} saved`, "success");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const rolePerms = permissions?.[activeRole] || {};
+
+  return (
+    <SectionCard
+      title="Role Permissions"
+      description="Atur menu dan fitur apa yang bisa diakses setiap role"
+    >
+      {/* Role Tabs */}
+      <div className="flex gap-2 mb-5">
+        {["partner", "parents"].map((role) => (
+          <button
+            key={role}
+            onClick={() => setActiveRole(role)}
+            className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border
+              ${activeRole === role
+                ? "bg-gray-900 text-white border-gray-900"
+                : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"}`}
+          >
+            <RoleBadge role={role} />
+          </button>
+        ))}
+      </div>
+
+      {loading ? (
+        <div className="py-6 flex justify-center">
+          <LogoLoader size={40} text="Loading..." textClassName="text-gray-400 text-xs" />
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {MENU_RESOURCES.map(({ key, label, icon, isParent }) => (
+            <div key={key}>
+              <div className="flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-gray-50 transition-all">
+                <div className="flex items-center gap-2.5 text-sm font-medium text-gray-700">
+                  <span>{icon}</span>
+                  <span>{label}</span>
+                </div>
+                <button
+                  onClick={() => toggle(key)}
+                  className={`relative w-10 h-5 rounded-full transition-colors duration-200 focus:outline-none
+                    ${rolePerms[key] ? "bg-gray-900" : "bg-gray-200"}`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform duration-200
+                      ${rolePerms[key] ? "translate-x-5" : "translate-x-0"}`}
+                  />
+                </button>
+              </div>
+
+              {/* Settings sub-tabs — tampilkan jika settings toggle ON */}
+              {isParent && rolePerms[key] && (
+                <div className="ml-6 mt-1 mb-2 space-y-1 border-l-2 border-gray-100 pl-3">
+                  {SETTINGS_TABS.map(({ key: tabKey, label: tabLabel, icon: tabIcon }) => (
+                    <div
+                      key={tabKey}
+                      className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-gray-50 transition-all"
+                    >
+                      <div className="flex items-center gap-2 text-xs font-medium text-gray-500">
+                        <span>{tabIcon}</span>
+                        <span>{tabLabel}</span>
+                      </div>
+                      <button
+                        onClick={() => toggle(tabKey)}
+                        className={`relative w-9 h-4 rounded-full transition-colors duration-200 focus:outline-none
+                          ${rolePerms[tabKey] ? "bg-gray-700" : "bg-gray-200"}`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-3 h-3 bg-white rounded-full shadow transition-transform duration-200
+                            ${rolePerms[tabKey] ? "translate-x-4" : "translate-x-0"}`}
+                        />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+
+          <div className="pt-4 flex justify-end">
+            <SaveButton saving={saving} onClick={handleSave} label="Save Permissions" />
+          </div>
+        </div>
+      )}
+    </SectionCard>
+  );
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 const ROLES = ["admin", "partner", "parents"];
@@ -188,6 +338,8 @@ export function UserModal({ open, onClose, onSave, initial }) {
 }
 
 export function TabUsers({ push }) {
+  const currentUser = authService.getAdminUser();
+  const isAdmin = currentUser?.role === "admin";
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -415,6 +567,8 @@ export function TabUsers({ push }) {
             </div>
           )}
         </SectionCard>
+
+        {isAdmin && <PermissionManager push={push} />}
       </div>
     </>
   );

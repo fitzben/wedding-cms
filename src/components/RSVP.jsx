@@ -5,13 +5,14 @@ import LogoLoader from "./LogoLoader";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const RSVP = ({ guest, guestName, maxPax = 2 }) => {
+const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
   useScrollReveal();
 
   const [formData, setFormData] = useState({
     name: guestName || "Guest Name",
     pax: 1,
     attendance: "yes",
+    event_attendance: eventAccess === "both" ? "" : eventAccess,
     message: "",
   });
   const [status, setStatus] = useState("idle"); // idle, loading, success, error
@@ -27,10 +28,12 @@ const RSVP = ({ guest, guestName, maxPax = 2 }) => {
         name: guest.display_name || prev.name,
         pax: guest.rsvp_pax || prev.pax,
         attendance: guest.rsvp_attendance || prev.attendance,
+        event_attendance: guest.rsvp_event_attendance ||
+          (eventAccess !== "both" ? eventAccess : prev.event_attendance),
         message: guest.rsvp_message || prev.message,
       }));
     }
-  }, [guest]);
+  }, [guest, eventAccess]);
 
   const fetchWishes = async () => {
     try {
@@ -73,7 +76,8 @@ const RSVP = ({ guest, guestName, maxPax = 2 }) => {
         body: JSON.stringify({
           ...formData,
           pax: parseInt(formData.pax, 10) || 1,
-          guest_id: guest?.id, // Include guest_id to allow upsert/linkage
+          guest_id: guest?.id,
+          event_attendance: formData.attendance === "no" ? null : formData.event_attendance || null,
         }),
       });
 
@@ -259,6 +263,37 @@ const RSVP = ({ guest, guestName, maxPax = 2 }) => {
                 ))}
               </div>
             </div>
+
+            {eventAccess === "both" && formData.attendance !== "no" && (
+              <div className="space-y-2.5 pt-1">
+                <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest pl-1 text-center">
+                  Which event will you attend?
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: "hm_only", label: "Holy Matrimony", icon: "⛪" },
+                    { value: "both", label: "Both Events", icon: "🎊" },
+                    { value: "resepsi_only", label: "Reception", icon: "🥂" },
+                  ].map(({ value, label, icon }) => (
+                    <label key={value} className="relative cursor-pointer group">
+                      <input
+                        type="radio"
+                        name="event_attendance"
+                        value={value}
+                        checked={formData.event_attendance === value}
+                        onChange={handleChange}
+                        className="peer sr-only"
+                        disabled={status === "loading"}
+                      />
+                      <div className="text-center py-3 px-1 border border-gray-100 bg-gray-50/50 rounded-xl text-[11px] font-medium text-gray-500 peer-checked:bg-maroon peer-checked:border-maroon peer-checked:text-gold peer-checked:shadow-md transition-all duration-300 hover:border-maroon/30 group-hover:bg-gray-50 leading-tight">
+                        <div className="text-base mb-1">{icon}</div>
+                        {label}
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="space-y-1.5 pt-1">
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest pl-1">
