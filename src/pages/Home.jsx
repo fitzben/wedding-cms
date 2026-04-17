@@ -228,6 +228,7 @@ const Home = () => {
                 guest={guest}
                 guestName={guestName}
                 maxPax={guest?.pax_allowed || 2}
+                eventAccess={eventAccess}
               />
             )}
           </Suspense>

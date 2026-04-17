@@ -22,6 +22,7 @@ const API = {
         ? { invitation_type: filters.invitation_type }
         : {}),
     });
+    if (filters.created_by) params.set("created_by", filters.created_by);
     const qs = params.toString();
     const cacheKey = `adminguests_${qs}`;
     return apiCache.fetch(cacheKey, () =>
@@ -79,6 +80,7 @@ const EMPTY_FILTERS = {
   importance: "",
   guest_group_id: "",
   invitation_type: "",
+  created_by: "",
 };
 
 export default function useAdminGuests() {
@@ -91,6 +93,7 @@ export default function useAdminGuests() {
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
   const [groups, setGroups] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -112,11 +115,15 @@ export default function useAdminGuests() {
 
   const user = authService.getAdminUser();
   const isAdmin = user?.role === "admin" || user?.role === "parents";
+  const currentUserId = user?.user_id || "";
 
   // ── Load groups + WA template once ──
   useEffect(() => {
     GroupAPI.list()
       .then((r) => setGroups(r.groups || []))
+      .catch(() => {});
+    apiClient.get("/api/admin/users")
+      .then((r) => setAdminUsers(r.users || []))
       .catch(() => {});
     API.getSettings()
       .then((r) => {
@@ -127,6 +134,13 @@ export default function useAdminGuests() {
       })
       .catch(() => {});
   }, []);
+
+  // ── Auto-fill created_by filter when panel opens ──
+  useEffect(() => {
+    if (showFilters && !filters.created_by && currentUserId) {
+      setFilter("created_by", currentUserId);
+    }
+  }, [showFilters]);
 
   // ── Debounced search ──
   useEffect(() => {
@@ -458,6 +472,8 @@ export default function useAdminGuests() {
 
     // permissions
     isAdmin,
+    currentUserId,
+    adminUsers,
   };
 }
 

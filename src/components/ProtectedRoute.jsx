@@ -1,23 +1,22 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import * as authService from '../services/authService';
+import usePermissions from '../hooks/admin/usePermissions';
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
+const ProtectedRoute = ({ children, resource }) => {
   const isAuth = authService.isAuthenticated();
-  const user = authService.getAdminUser();
   const location = useLocation();
+  const { can, loading } = usePermissions();
 
   if (!isAuth) {
-    // Redirect to login but save the current location to redirect back after login
     return <Navigate to="/admin/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user?.role)) {
-    // If user doesn't have the required role, redirect to a safe page
-    // For parents, the only safe page is guests
-    if (user?.role === 'parents') {
-      return <Navigate to="/admin/guests" replace />;
-    }
-    // Default fallback
+  // Saat permissions masih loading, render children dulu
+  // Backend tetap enforce akses — ini hanya untuk UX agar tidak flicker
+  if (loading) return children;
+
+  // Jika route punya resource requirement, cek permission
+  if (resource && !can(resource)) {
     return <Navigate to="/admin/dashboard" replace />;
   }
 
