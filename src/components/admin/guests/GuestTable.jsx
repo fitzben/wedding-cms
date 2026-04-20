@@ -48,6 +48,7 @@ export function GuestTable({
             <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Undangan</th>
             <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider">Akses</th>
             <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">Note</th>
+            <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-center">Dibuka</th>
             <th className="py-2.5 px-3 font-semibold text-gray-600 text-xs uppercase tracking-wider text-right">Actions</th>
           </tr>
         </thead>
@@ -55,7 +56,7 @@ export function GuestTable({
           {loading ? (
             <tr>
               <td
-                colSpan="11"
+                colSpan="12"
                 className="py-14 text-center text-gray-400"
               >
                 <span className="inline-flex items-center gap-2">
@@ -86,7 +87,7 @@ export function GuestTable({
           ) : guests.length === 0 ? (
             <tr>
               <td
-                colSpan="11"
+                colSpan="12"
                 className="py-14 text-center text-gray-400"
               >
                 <div className="flex flex-col items-center gap-3">
@@ -227,6 +228,22 @@ export function GuestTable({
                       </span>
                     ) : (
                       <span className="text-gray-200">—</span>
+                    )}
+                  </td>
+
+                  {/* Visit count */}
+                  <td className="py-3 px-3 text-center">
+                    {guest.visited_at ? (
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-xs font-semibold text-emerald-600">
+                          {guest.visit_count || 1}x
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(guest.last_visited_at || guest.visited_at).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
                     )}
                   </td>
 

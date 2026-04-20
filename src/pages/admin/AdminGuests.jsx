@@ -50,13 +50,15 @@ export const AdminGuests = () => {
     copyLinkWithMessage,
     openWhatsApp,
     handleMarkInvited,
+    handleExportAll,
+    handleImportCSV,
     totalPages,
     toasts,
     confirm,
     setConfirm,
     isAdmin,
-    currentUserId,
     adminUsers,
+    allGuestNames,
   } = useAdminGuests();
 
   const duplicateGroups = findAllDuplicateGroups(guests);
@@ -141,7 +143,7 @@ export const AdminGuests = () => {
         onSave={handleSave}
         initial={editGuest}
         groups={groups}
-        allGuests={guests}
+        allGuests={allGuestNames}
         adminUsers={adminUsers}
       />
 
@@ -381,7 +383,7 @@ export const AdminGuests = () => {
                 )}
               </button>
 
-              {/* Export */}
+              {/* Export current page */}
               <button
                 onClick={() => exportCSV(guests)}
                 title="Export current page to CSV"
@@ -402,6 +404,61 @@ export const AdminGuests = () => {
                 </svg>
                 CSV
               </button>
+
+              {/* Export all guests */}
+              <button
+                onClick={handleExportAll}
+                title="Export semua tamu ke CSV"
+                className="flex items-center gap-1.5 px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+              >
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
+                Export All
+              </button>
+
+              {/* Import CSV */}
+              {isAdmin && (
+                <label
+                  title="Import tamu dari CSV"
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all cursor-pointer"
+                >
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l4-4m0 0l4 4m-4-4v12"
+                    />
+                  </svg>
+                  Import CSV
+                  <input
+                    type="file"
+                    accept=".csv"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleImportCSV(file);
+                      e.target.value = "";
+                    }}
+                  />
+                </label>
+              )}
 
               {/* Bulk delete */}
               {selected.size > 0 && isAdmin && (

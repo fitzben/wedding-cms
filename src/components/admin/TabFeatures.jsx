@@ -34,6 +34,26 @@ export function TabFeatures({ settings, onChange, onSave, saving }) {
       </SectionCard>
 
       <SectionCard
+        title="RSVP Deadline"
+        description="Set a cutoff date after which guests cannot submit RSVP"
+      >
+        <div className="space-y-1.5">
+          <Label>Deadline Date &amp; Time</Label>
+          <input
+            type="datetime-local"
+            value={settings.rsvp_deadline
+              ? new Date(settings.rsvp_deadline).toISOString().slice(0, 16)
+              : ""}
+            onChange={(e) => onChange("rsvp_deadline", e.target.value || null)}
+            className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:border-gray-400 focus:ring-2 focus:ring-gray-100 bg-white"
+          />
+          <p className="text-xs text-gray-400 mt-1">
+            Setelah tanggal ini, tamu tidak bisa submit RSVP. Kosongkan untuk tidak ada batas.
+          </p>
+        </div>
+      </SectionCard>
+
+      <SectionCard
         title="Maintenance Mode"
         description="Temporarily take the invitation offline"
         action={

@@ -8,19 +8,57 @@ import {
   EVENT_ACCESS_OPTIONS,
 } from "./constants";
 
+function stripTitlesAndInitials(name) {
+  return name
+    .replace(/\b(pdt\.?|rev\.?|dr\.?|drs\.?|ir\.?|prof\.?|bpk\.?|ibu?\.?|ust\.?|hj?\.?|kh\.?|mgr\.?|rm\.?|sr\.?|br\.?)\b/gi, "")
+    .replace(/\b[A-Z][a-z]*\.(Th|Fil|Div|Kom|Si|Pd|Hum|Sos|H|E|T|Ak|IP|Gz|Farm|Ked)\b/g, "")
+    .replace(/\b[A-Z]{1,2}\.\s*/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getCoreName(g) {
+  const raw = g.display_name || `${g.first_name || ""} ${g.last_name || ""}`;
+  return stripTitlesAndInitials(raw).toLowerCase().trim();
+}
+
+function getCoreNameFromInput(firstName, lastName) {
+  const raw = `${firstName} ${lastName}`;
+  return stripTitlesAndInitials(raw).toLowerCase().trim();
+}
+
+function nameSimilarityScore(a, b) {
+  if (!a || !b) return 0;
+  if (a === b) return 1;
+  if (a.includes(b) || b.includes(a)) return 0.95;
+
+  const tokensA = new Set(a.split(" ").filter((t) => t.length > 1));
+  const tokensB = new Set(b.split(" ").filter((t) => t.length > 1));
+  const tokenInter = [...tokensA].filter((t) => tokensB.has(t)).length;
+  const tokenScore = (2 * tokenInter) / (tokensA.size + tokensB.size);
+
+  const bigrams = (s) => {
+    const set = new Set();
+    for (let i = 0; i < s.length - 1; i++) set.add(s.slice(i, i + 2));
+    return set;
+  };
+  const b1 = bigrams(a), b2 = bigrams(b);
+  const bigramInter = [...b1].filter((x) => b2.has(x)).length;
+  const bigramScore = (2 * bigramInter) / (b1.size + b2.size);
+
+  return Math.max(tokenScore, bigramScore);
+}
+
 function getSimilarGuests(firstName, lastName, allGuests = [], currentId = null) {
   if (!firstName.trim() && !lastName.trim()) return [];
-  const normalize = (s) => s.toLowerCase().replace(/\s+/g, " ").trim();
-  const input = normalize(`${firstName} ${lastName}`);
+  const inputCore = getCoreNameFromInput(firstName, lastName);
+  if (!inputCore) return [];
+
   return allGuests.filter((g) => {
     if (g.id === currentId) return false;
-    const name = normalize(g.display_name || `${g.first_name || ""} ${g.last_name || ""}`);
-    if (!name) return false;
-    if (input === name || input.includes(name) || name.includes(input)) return true;
-    const bigrams = (s) => { const b = new Set(); for (let i = 0; i < s.length - 1; i++) b.add(s.slice(i, i+2)); return b; };
-    const b1 = bigrams(input), b2 = bigrams(name);
-    const inter = [...b1].filter(x => b2.has(x)).length;
-    return (2 * inter) / (b1.size + b2.size) > 0.6;
+    const gCore = getCoreName(g);
+    if (!gCore) return false;
+    return nameSimilarityScore(inputCore, gCore) >= 0.6;
   });
 }
 
@@ -28,10 +66,12 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [errors, setErrors] = useState({});
+  const [confirmedDuplicate, setConfirmedDuplicate] = useState(false);
   const firstRef = useRef(null);
 
   useEffect(() => {
     if (open) {
+      setConfirmedDuplicate(false);
       setForm(
         initial
           ? {
@@ -93,6 +133,7 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
       }
       setForm((p) => ({ ...p, [key]: val }));
       setErrors((p) => ({ ...p, [key]: "" }));
+      if (key === "first_name" || key === "last_name") setConfirmedDuplicate(false);
     },
   });
 
@@ -178,24 +219,55 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
           </div>
 
           {similarGuests.length > 0 && (
-            <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-xl">
-              <p className="text-xs font-semibold text-amber-700 flex items-center gap-1.5 mb-1.5">
-                ⚠️ Nama serupa ditemukan — pastikan bukan duplikat:
-              </p>
-              <ul className="space-y-1">
-                {similarGuests.slice(0, 3).map((g) => (
-                  <li key={g.id} className="text-xs text-amber-600 flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
-                    {g.display_name || `${g.first_name} ${g.last_name}`}
-                    {g.created_by && (() => {
-                      const creator = adminUsers.find(u => u.id === g.created_by);
-                      return creator ? (
-                        <span className="text-xs text-gray-400">· {creator.name}</span>
-                      ) : null;
-                    })()}
-                  </li>
-                ))}
-              </ul>
+            <div className={`mt-2 p-3 rounded-xl border ${confirmedDuplicate ? "bg-gray-50 border-gray-200" : "bg-amber-50 border-amber-200"}`}>
+              <div className="flex items-start justify-between gap-2">
+                <p className={`text-xs font-semibold flex items-center gap-1.5 mb-1.5 ${confirmedDuplicate ? "text-gray-500" : "text-amber-700"}`}>
+                  {confirmedDuplicate ? "✅" : "⚠️"}
+                  {confirmedDuplicate
+                    ? "Sudah dikonfirmasi — beda orang"
+                    : "Nama serupa ditemukan — pastikan bukan duplikat:"}
+                </p>
+                {confirmedDuplicate && (
+                  <button
+                    onClick={() => setConfirmedDuplicate(false)}
+                    className="text-[10px] text-gray-400 hover:text-gray-600 underline flex-shrink-0"
+                  >
+                    Batalkan
+                  </button>
+                )}
+              </div>
+
+              {!confirmedDuplicate && (
+                <>
+                  <ul className="space-y-1 mb-2.5">
+                    {similarGuests.slice(0, 3).map((g) => {
+                      const creator = adminUsers?.find(u => u.id === g.created_by);
+                      return (
+                        <li key={g.id} className="text-xs text-amber-600 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" />
+                          <span className="font-medium">
+                            {g.display_name || `${g.first_name} ${g.last_name}`}
+                          </span>
+                          {creator && (
+                            <span className="text-amber-400">· {creator.name}</span>
+                          )}
+                        </li>
+                      );
+                    })}
+                    {similarGuests.length > 3 && (
+                      <li className="text-xs text-amber-400 pl-3">
+                        +{similarGuests.length - 3} lainnya...
+                      </li>
+                    )}
+                  </ul>
+                  <button
+                    onClick={() => setConfirmedDuplicate(true)}
+                    className="w-full py-1.5 px-3 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-semibold transition-all"
+                  >
+                    Saya yakin ini orang berbeda, lanjutkan
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -478,32 +550,27 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
           </button>
           <button
             onClick={handleSubmit}
-            disabled={saving}
-            className="flex-1 md:flex-none px-5 py-3 rounded-xl bg-gray-900 text-white text-sm font-semibold hover:bg-gray-800 transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2"
+            disabled={saving || (similarGuests.length > 0 && !confirmedDuplicate)}
+            className={`flex-1 md:flex-none px-5 py-3 rounded-xl text-white text-sm font-semibold transition-all shadow-sm disabled:opacity-60 flex items-center justify-center gap-2
+              ${similarGuests.length > 0 && !confirmedDuplicate
+                ? "bg-amber-500 hover:bg-amber-600 cursor-not-allowed"
+                : "bg-gray-900 hover:bg-gray-800"
+              }`}
           >
             {saving && (
-              <svg
-                className="animate-spin w-4 h-4"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
+              <svg className="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             )}
-            {saving ? "Saving…" : initial ? "Save Changes" : "Add Guest"}
+            {saving
+              ? "Saving…"
+              : similarGuests.length > 0 && !confirmedDuplicate
+                ? "⚠️ Konfirmasi dulu di atas"
+                : initial
+                  ? "Save Changes"
+                  : "Add Guest"
+            }
           </button>
         </div>
       </div>

@@ -41,7 +41,7 @@ const API = {
 
 // Invalidate ALL guest list cache entries so the next fetch always hits the network
 const invalidateGuestCache = (slug = null) => {
-  const cache = apiCache._cache || apiCache.cache;
+  const cache = apiCache.cache;
   if (cache && typeof cache.forEach === "function") {
     const keysToDelete = [];
     cache.forEach((_, key) => {
@@ -85,6 +85,7 @@ const EMPTY_FILTERS = {
 
 export default function useAdminGuests() {
   const [guests, setGuests] = useState([]);
+  const [allGuestNames, setAllGuestNames] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
@@ -133,6 +134,9 @@ export default function useAdminGuests() {
         setSettings(r.settings || {});
       })
       .catch(() => {});
+    apiClient.get("/api/admin/guests/names")
+      .then((r) => setAllGuestNames(r.names || []))
+      .catch(() => {});
   }, []);
 
   // ── Auto-fill created_by filter when panel opens ──
@@ -167,6 +171,9 @@ export default function useAdminGuests() {
       );
       setGuests(result.data || []);
       setTotal(result.total || 0);
+      apiClient.get("/api/admin/guests/names")
+        .then((r) => setAllGuestNames(r.names || []))
+        .catch(() => {});
     } catch (err) {
       setError(err.message || "Failed to load guests");
     } finally {
@@ -341,6 +348,41 @@ export default function useAdminGuests() {
       .then(() => push("Link + pesan berhasil disalin!", "info"));
   };
 
+  const handleExportAll = () => {
+    const token = localStorage.getItem("token");
+    const url = `${import.meta.env.VITE_API_BASE_URL}/api/admin/guests/export`;
+    // Use a temporary anchor so the auth header can't be set — rely on the
+    // server accepting the token from the query string is a security risk,
+    // so instead open a fetch-based download.
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => res.blob())
+      .then((blob) => {
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `guests-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      })
+      .catch(() => push("Gagal export CSV", "error"));
+  };
+
+  const handleImportCSV = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await apiClient.postForm("/api/admin/guests/import", formData);
+      push(
+        `Import selesai: ${res.success} berhasil, ${res.failed} gagal`,
+        res.failed > 0 ? "info" : "success",
+      );
+      if (res.errors?.length) console.warn("Import errors:", res.errors);
+      invalidateGuestCache();
+      fetchGuests();
+    } catch (e) {
+      push(e.message || "Gagal import CSV", "error");
+    }
+  };
+
   // Build WA URL — uses buildMessage helper above
   const openWhatsApp = (guest) => {
     const phone = guest.phone_number?.replace(/\D/g, "");
@@ -464,6 +506,8 @@ export default function useAdminGuests() {
     handleMarkInvited,
     copyLink,
     copyLinkWithMessage,
+    handleExportAll,
+    handleImportCSV,
 
     // toast + confirm
     toasts,
@@ -474,6 +518,9 @@ export default function useAdminGuests() {
     isAdmin,
     currentUserId,
     adminUsers,
+
+    // duplicate detection
+    allGuestNames,
   };
 }
 
