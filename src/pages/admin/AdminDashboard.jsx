@@ -666,6 +666,8 @@ export const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [lastRefresh, setLastRefresh] = useState(null);
+  const [lastRsvpCount, setLastRsvpCount] = useState(null);
+  const [hasNewRsvp, setHasNewRsvp] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -678,18 +680,32 @@ export const AdminDashboard = () => {
       }
       setData(res);
       setLastRefresh(new Date());
+      const newCount = res.rsvp?.total || 0;
+      if (lastRsvpCount !== null && newCount > lastRsvpCount) {
+        setHasNewRsvp(true);
+      }
+      setLastRsvpCount(newCount);
     } catch {
       setError("Failed to load dashboard data");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [lastRsvpCount]);
+
+  useEffect(() => {
+    if (hasNewRsvp) {
+      document.title = "🔔 RSVP Baru! — Wedding Admin";
+    } else {
+      document.title = "Wedding Admin";
+    }
+    return () => { document.title = "Wedding Admin"; };
+  }, [hasNewRsvp]);
 
   useEffect(() => {
     load();
     const t = setInterval(load, 60000);
     return () => clearInterval(t);
-  }, []);
+  }, [load]);
 
   const s = data?.settings || {};
   const g = data?.guests || {};
@@ -738,6 +754,13 @@ export const AdminDashboard = () => {
       sub: `${gf.physical_confirmed ?? 0} dikonfirmasi`,
       icon: "🎁",
       color: "bg-orange-50 border-orange-100 text-orange-900",
+    },
+    {
+      label: "Link Dibuka",
+      value: g.visited_count ?? 0,
+      sub: `dari ${g.total ?? 0} tamu`,
+      icon: "👁️",
+      color: "bg-teal-50 border-teal-100 text-teal-900",
     },
   ];
 
@@ -788,6 +811,27 @@ export const AdminDashboard = () => {
 
       {/* Wedding banner */}
       <WeddingBanner settings={s} loading={loading} />
+
+      {/* RSVP notification banner */}
+      {hasNewRsvp && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-2xl px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-emerald-500 text-xl">🔔</span>
+            <div>
+              <p className="text-sm font-semibold text-emerald-800">Ada RSVP baru masuk!</p>
+              <p className="text-xs text-emerald-600">Cek halaman RSVP untuk detail lengkap.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setHasNewRsvp(false)}
+            className="text-emerald-400 hover:text-emerald-600 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

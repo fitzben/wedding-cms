@@ -104,6 +104,12 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
 
       if (!rsvpResponse.ok) {
         const data = await rsvpResponse.json();
+        if (rsvpResponse.status === 403 &&
+            (data.error?.includes("deadline") || data.error?.includes("closed"))) {
+          setErrorMessage("Maaf, batas waktu RSVP sudah berakhir.");
+          setStatus("error");
+          return;
+        }
         throw new Error(data.error || "Failed to submit RSVP");
       }
 

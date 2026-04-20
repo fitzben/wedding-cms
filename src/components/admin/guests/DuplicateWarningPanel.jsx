@@ -97,7 +97,6 @@ export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
     })
     .filter((group) => group.length >= 2);
 
-
   const handleAcceptGroup = (group) => {
     setDismissedPairs((prev) => {
       const next = new Set(prev);
@@ -111,7 +110,9 @@ export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
           "guest_dismissed_pairs",
           JSON.stringify([...next]),
         );
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
       return next;
     });
   };
@@ -231,7 +232,9 @@ export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
                                     "guest_dismissed_pairs",
                                     JSON.stringify([...next]),
                                   );
-                                } catch { /* ignore */ }
+                                } catch {
+                                  /* ignore */
+                                }
                                 return next;
                               });
                             }}
@@ -267,7 +270,9 @@ export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
                 setDismissedPairs(new Set());
                 try {
                   sessionStorage.removeItem("guest_dismissed_pairs");
-                } catch { /* ignore */ }
+                } catch {
+                  /* ignore */
+                }
               }}
               className="text-xs text-amber-500 hover:text-amber-700 underline underline-offset-2"
             >

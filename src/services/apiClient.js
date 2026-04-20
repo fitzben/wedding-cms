@@ -60,4 +60,16 @@ export const apiClient = {
   put: (path, body, options) => request(path, { ...options, method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
   patch: (path, body, options) => request(path, { ...options, method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
   delete: (path, options) => request(path, { ...options, method: 'DELETE' }),
+  postForm: async (path, formData) => {
+    const token = localStorage.getItem('token');
+    const url = path.startsWith('http') ? path : `${API_BASE_URL}${path}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    });
+    return res.json();
+  },
 };
