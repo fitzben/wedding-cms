@@ -13,10 +13,13 @@ const Journey = () => {
   const trackRef = useRef(null);
   const autoAdvanceRef = useRef(null);
   const sectionRef = useRef(null);
+  const videoRef = useRef(null);
   const isSectionInView = useInView(sectionRef, { amount: 0.1 });
 
   // Ensure items are sorted by sort_order from BE
-  const journeyData = [...items].sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+  const journeyData = [...items].sort(
+    (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+  );
   const total = journeyData.length;
 
   const nextJourney = () => {
@@ -127,6 +130,28 @@ const Journey = () => {
     }
   };
 
+  const bgUrl = settings?.journey_background ?? "";
+  const isVideo = !!(
+    bgUrl.match(/\.(mp4|webm|ogg|mov)$/i) ||
+    bgUrl.includes("vimeo") ||
+    bgUrl.includes("youtube") ||
+    bgUrl.includes("youtu.be") ||
+    bgUrl.includes("stream")
+  );
+  const isImage = !!(bgUrl.startsWith("http") && !isVideo);
+
+  useEffect(() => {
+    if (isVideo && videoRef.current) {
+      if (isSectionInView) {
+        videoRef.current.play().catch((err) => {
+          console.warn("Video autoplay failed:", err);
+        });
+      } else {
+        videoRef.current.pause();
+      }
+    }
+  }, [isSectionInView, isVideo]);
+
   // ─── Loading State ────────────────────────────────────────────────────────
   if (loading || settingsLoading) {
     return (
@@ -144,15 +169,6 @@ const Journey = () => {
   // ─── Empty State ──────────────────────────────────────────────────────────
   if (journeyData.length === 0) return null;
 
-  const bgUrl = settings.journey_background ?? "";
-  const isVideo =
-    bgUrl.match(/\.(mp4|webm|ogg|mov)$/i) ||
-    bgUrl.includes("vimeo") ||
-    bgUrl.includes("youtube") ||
-    bgUrl.includes("youtu.be") ||
-    bgUrl.includes("stream");
-  const isImage = bgUrl.startsWith("http") && !isVideo;
-
   return (
     <section
       ref={sectionRef}
@@ -161,18 +177,19 @@ const Journey = () => {
     >
       {/* ─── Aesthetic Background Layer ─── */}
       <div className="absolute inset-0 z-0 overflow-hidden">
-        {isVideo && isSectionInView ? (
+        {isVideo ? (
           <div className="absolute inset-0 w-full h-full">
             <video
+              ref={videoRef}
+              key={bgUrl}
               autoPlay
               muted
               loop
               playsInline
               className="w-full h-full object-cover scale-[1.02]"
               poster={isImage ? bgUrl : ""}
-            >
-              <source src={bgUrl} type="video/mp4" />
-            </video>
+              src={bgUrl}
+            />
             {/* Cinematic Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-black/40 to-black/80" />
           </div>
