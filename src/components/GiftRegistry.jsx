@@ -73,7 +73,7 @@ function ClaimModal({ item, onClose, onSuccess, guestName }) {
         return;
       }
       setDone(res);
-      onSuccess(item.id, res.quantity_claimed);
+      onSuccess(item.id, res.quantity_claimed, form.claimer_name);
     } catch {
       setError("Gagal mengirim, coba lagi");
     } finally {
@@ -318,6 +318,11 @@ function GiftCard({ item, onClaim }) {
             <p className="font-sans font-light text-[11px] text-charcoal/50 mt-1">
               {item.quantity_needed} / {item.quantity_needed} sudah diambil
             </p>
+            {item.claimer_names && item.claimer_names.length > 0 && (
+              <p className="font-sans font-normal text-[10px] text-maroon/70 mt-2 px-6">
+                oleh: {[...new Set(item.claimer_names)].join(", ")}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -365,6 +370,26 @@ function GiftCard({ item, onClaim }) {
           needed={item.quantity_needed}
         />
 
+        {/* Claimers List */}
+        {item.claimer_names && item.claimer_names.length > 0 && (
+          <div className="mt-3">
+            <p className="font-sans font-light text-[9px] text-charcoal/40 tracking-[0.05em] uppercase mb-1">
+              Diambil oleh:
+            </p>
+            <div className="flex flex-wrap gap-x-1.5 gap-y-1">
+              {[...new Set(item.claimer_names)].map((name, i, arr) => (
+                <span
+                  key={i}
+                  className="font-sans font-normal text-[10px] text-maroon/80"
+                >
+                  {name}
+                  {i < arr.length - 1 ? "," : ""}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* CTA */}
         {!isFull && (
           <button
@@ -406,11 +431,17 @@ const GiftRegistry = () => {
     });
   };
 
-  // Update quantity_claimed in local state after successful claim
-  const handleClaimSuccess = (itemId, newClaimed) => {
+  // Update items in local state after successful claim
+  const handleClaimSuccess = (itemId, newClaimed, attendeeName) => {
     setItems((prev) =>
       prev.map((i) =>
-        i.id === itemId ? { ...i, quantity_claimed: newClaimed } : i,
+        i.id === itemId
+          ? {
+              ...i,
+              quantity_claimed: newClaimed,
+              claimer_names: [...(i.claimer_names || []), attendeeName],
+            }
+          : i,
       ),
     );
   };
