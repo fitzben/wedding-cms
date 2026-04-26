@@ -59,9 +59,16 @@ export const AdminGuests = () => {
     isAdmin,
     adminUsers,
     allGuestNames,
+    waBlastQueue,
+    waBlastIndex,
+    waBlastOpen,
+    setWaBlastOpen,
+    startWaBlast,
+    waBlastNext,
+    waBlastSkip,
   } = useAdminGuests();
 
-  const duplicateGroups = findAllDuplicateGroups(guests);
+  const duplicateGroups = findAllDuplicateGroups(allGuestNames);
 
   const [copyMenu, setCopyMenu] = useState(null); // { guest, x, y } or null
   const openCopyMenu = (e, guest) => {
@@ -72,6 +79,76 @@ export const AdminGuests = () => {
   return (
     <>
       <Toast toasts={toasts} />
+
+      {waBlastOpen && waBlastQueue.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm mx-4">
+          <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+            {/* Header */}
+            <div className="px-4 py-3 bg-gray-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span>💬</span>
+                <span className="text-sm font-semibold">WA Blast</span>
+                <span className="text-xs text-gray-400">
+                  {waBlastIndex + 1} / {waBlastQueue.length}
+                </span>
+              </div>
+              <button
+                onClick={() => setWaBlastOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-1 bg-gray-100">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-300"
+                style={{ width: `${((waBlastIndex + 1) / waBlastQueue.length) * 100}%` }}
+              />
+            </div>
+
+            {/* Current guest */}
+            <div className="px-4 py-3">
+              <div className="text-xs text-gray-400 mb-1">Sedang dikirim ke:</div>
+              <div className="font-semibold text-gray-900 text-sm">
+                {waBlastQueue[waBlastIndex]?.display_name ||
+                  `${waBlastQueue[waBlastIndex]?.first_name} ${waBlastQueue[waBlastIndex]?.last_name}`}
+              </div>
+              <div className="text-xs text-gray-400 mt-0.5">
+                {waBlastQueue[waBlastIndex]?.phone_number}
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="px-4 pb-4 flex gap-2">
+              <button
+                onClick={() => {
+                  openWhatsApp(waBlastQueue[waBlastIndex]);
+                }}
+                className="flex-1 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-semibold rounded-xl transition-all flex items-center justify-center gap-1.5"
+              >
+                <span>📤</span> Buka WhatsApp
+              </button>
+              <button
+                onClick={() => waBlastNext(true)}
+                className="flex-1 py-2.5 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold rounded-xl transition-all"
+              >
+                {waBlastIndex < waBlastQueue.length - 1 ? "✓ Terkirim, Lanjut" : "✓ Selesai"}
+              </button>
+              <button
+                onClick={waBlastSkip}
+                className="px-3 py-2.5 border border-gray-200 text-gray-500 text-xs font-semibold rounded-xl hover:bg-gray-50 transition-all"
+                title="Lewati tamu ini"
+              >
+                Skip
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Copy popover — fixed so not clipped by overflow-x-auto */}
       {copyMenu && (
@@ -458,6 +535,18 @@ export const AdminGuests = () => {
                     }}
                   />
                 </label>
+              )}
+
+              {/* WA Blast */}
+              {isAdmin && (
+                <button
+                  onClick={() => startWaBlast(guests)}
+                  className="flex items-center gap-1.5 px-3.5 py-2.5 border border-emerald-200 bg-emerald-50 rounded-xl text-sm font-semibold text-emerald-700 hover:bg-emerald-100 transition-all"
+                  title="Kirim WA ke semua tamu yang belum diundang"
+                >
+                  <span>💬</span>
+                  WA Blast
+                </button>
               )}
 
               {/* Bulk delete */}

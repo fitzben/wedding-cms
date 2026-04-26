@@ -112,6 +112,11 @@ export default function useAdminGuests() {
   const [waTemplate, setWaTemplate] = useState("");
   const [settings, setSettings] = useState({});
 
+  // WA Blast
+  const [waBlastQueue, setWaBlastQueue] = useState([]);
+  const [waBlastIndex, setWaBlastIndex] = useState(0);
+  const [waBlastOpen, setWaBlastOpen] = useState(false);
+
   const { toasts, push } = useToast();
 
   const user = authService.getAdminUser();
@@ -342,7 +347,6 @@ export default function useAdminGuests() {
 
   const copyLinkWithMessage = (guest) => {
     const text = buildMessage(guest);
-    console.log(text)
     navigator.clipboard
       .writeText(text)
       .then(() => push("Link + pesan berhasil disalin!", "info"));
@@ -422,6 +426,50 @@ export default function useAdminGuests() {
         "success",
       );
       invalidateGuestCache(guest.slug);
+    }
+  };
+
+  // ── WA Blast ──
+  const startWaBlast = (targetGuests) => {
+    const queue = (targetGuests || guests).filter(
+      (g) => g.phone_number && g.invite_status !== "sent"
+    );
+    if (!queue.length) {
+      push("Tidak ada tamu yang perlu dikirimi undangan", "info");
+      return;
+    }
+    setWaBlastQueue(queue);
+    setWaBlastIndex(0);
+    setWaBlastOpen(true);
+  };
+
+  const waBlastNext = async (markSent = true) => {
+    const current = waBlastQueue[waBlastIndex];
+    if (markSent && current) {
+      await API.markInvited(current.id, "sent");
+      setGuests((prev) =>
+        prev.map((g) => g.id === current.id ? { ...g, invite_status: "sent" } : g)
+      );
+    }
+    if (waBlastIndex < waBlastQueue.length - 1) {
+      setWaBlastIndex((i) => i + 1);
+      const next = waBlastQueue[waBlastIndex + 1];
+      if (next) openWhatsApp(next);
+    } else {
+      setWaBlastOpen(false);
+      push(`Blast selesai! ${waBlastIndex + 1} undangan dikirim`, "success");
+      invalidateGuestCache();
+      fetchGuests();
+    }
+  };
+
+  const waBlastSkip = () => {
+    if (waBlastIndex < waBlastQueue.length - 1) {
+      setWaBlastIndex((i) => i + 1);
+      const next = waBlastQueue[waBlastIndex + 1];
+      if (next) openWhatsApp(next);
+    } else {
+      setWaBlastOpen(false);
     }
   };
 
@@ -521,6 +569,15 @@ export default function useAdminGuests() {
 
     // duplicate detection
     allGuestNames,
+
+    // wa blast
+    waBlastQueue,
+    waBlastIndex,
+    waBlastOpen,
+    setWaBlastOpen,
+    startWaBlast,
+    waBlastNext,
+    waBlastSkip,
   };
 }
 

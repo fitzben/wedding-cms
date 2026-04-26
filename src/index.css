@@ -114,12 +114,39 @@
 
 /* MOBILE CAROUSEL OVERRIDES */
 @media (max-width: 767px) {
-    .journey-wrapper { min-height: auto; margin-bottom: 2rem; }
-    .journey-track { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; gap: 16px; padding: 0 24px 48px; transform-style: flat; min-height: auto; justify-content: flex-start; scrollbar-width: none; }
+    .journey-wrapper {
+        min-height: auto;
+        margin-bottom: 2rem;
+        overflow: hidden;
+        position: relative;
+    }
+    .journey-track {
+        display: flex;
+        overflow: visible;
+        gap: 16px;
+        padding: 0 7.5vw 48px;
+        transform-style: flat;
+        min-height: auto;
+        justify-content: flex-start;
+        scrollbar-width: none;
+        will-change: transform;
+        transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+    }
     .journey-track::-webkit-scrollbar { display: none; }
     .journey-card {
-        position: relative; left: auto; top: auto; margin: 0; scroll-snap-align: center; flex-shrink: 0; width: 85vw; height: auto;
-        transform: none !important; opacity: 1 !important; filter: none !important; box-shadow: none !important; z-index: 1 !important;
+        position: relative;
+        left: auto;
+        top: auto;
+        margin: 0;
+        flex-shrink: 0;
+        width: 85vw;
+        height: auto;
+        transform: none !important;
+        opacity: 1 !important;
+        filter: none !important;
+        box-shadow: 0 8px 32px rgba(61,5,16,0.15) !important;
+        z-index: 1 !important;
     }
 }
 
