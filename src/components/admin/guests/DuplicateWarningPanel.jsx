@@ -43,6 +43,7 @@ function nameSimilarity(a, b) {
   return Math.max(tokenScore, bigramScore);
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function findAllDuplicateGroups(guests, dismissedPairs = new Set()) {
   const groups = [];
   const visited = new Set();

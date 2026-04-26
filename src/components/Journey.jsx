@@ -10,7 +10,9 @@ const Journey = () => {
   const { items, loading } = useJourney();
   const { settings, loading: settingsLoading } = useSettings();
   const [activeIndex, setActiveIndex] = useState(0);
+  const [videoFullscreen, setVideoFullscreen] = useState(false);
   const trackRef = useRef(null);
+  const mobileIndexRef = useRef(0);
   const autoAdvanceRef = useRef(null);
   const sectionRef = useRef(null);
   const videoRef = useRef(null);
@@ -21,6 +23,17 @@ const Journey = () => {
     (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
   );
   const total = journeyData.length;
+
+  const bgUrl = settings?.journey_background ?? "";
+  const isVideo = !!(
+    bgUrl.match(/\.(mp4|webm|ogg|mov)$/i) ||
+    bgUrl.includes("vimeo") ||
+    bgUrl.includes("youtube") ||
+    bgUrl.includes("youtu.be") ||
+    bgUrl.includes("stream")
+  );
+  const isImage = !!(bgUrl.startsWith("http") && !isVideo);
+  const videoCardExists = isVideo && !!bgUrl;
 
   const nextJourney = () => {
     setActiveIndex((prev) => (prev + 1) % total);
@@ -72,17 +85,61 @@ const Journey = () => {
     }
   };
 
-  // ─── Sync mobile scroll with progress bar ────────────────────────────────
-  const handleScroll = () => {
-    if (window.innerWidth < 768 && trackRef.current) {
-      const scrollLeft = trackRef.current.scrollLeft;
-      const cardWidth = window.innerWidth * 0.85 + 16;
-      const index = Math.round(scrollLeft / cardWidth);
-      if (index !== activeIndex && index >= 0 && index < total) {
-        setActiveIndex(index);
-      }
-    }
+  // ─── Mobile JS Carousel ───────────────────────────────────────────────────
+  const mobileSwipeStartX = useRef(0);
+  const mobileSwipeStartY = useRef(0);
+  const isSwiping = useRef(false);
+
+  const getMobileTotal = () => {
+    const base = journeyData.length;
+    return videoCardExists ? base + 1 : base;
   };
+
+  const scrollToMobileIndex = (index, animate = true) => {
+    if (!trackRef.current || window.innerWidth >= 768) return;
+    const cardWidth = window.innerWidth * 0.85 + 16;
+    const offset = index * cardWidth - (window.innerWidth - window.innerWidth * 0.85) / 2;
+    if (animate) {
+      trackRef.current.style.transition = "transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+    } else {
+      trackRef.current.style.transition = "none";
+    }
+    trackRef.current.style.transform = `translateX(-${Math.max(0, offset)}px)`;
+    mobileIndexRef.current = index;
+    setActiveIndex(index);
+  };
+
+  const handleMobileTouchStart = (e) => {
+    if (window.innerWidth >= 768) return;
+    mobileSwipeStartX.current = e.changedTouches[0].screenX;
+    mobileSwipeStartY.current = e.changedTouches[0].screenY;
+    isSwiping.current = false;
+  };
+
+  const handleMobileTouchEnd = (e) => {
+    if (window.innerWidth >= 768) return;
+    const dx = e.changedTouches[0].screenX - mobileSwipeStartX.current;
+    const dy = e.changedTouches[0].screenY - mobileSwipeStartY.current;
+    if (Math.abs(dy) > Math.abs(dx)) return;
+    if (Math.abs(dx) < 40) return;
+
+    const mobileTotal = getMobileTotal();
+    let next = mobileIndexRef.current;
+    if (dx < 0) next = (next + 1) % mobileTotal;
+    else next = (next - 1 + mobileTotal) % mobileTotal;
+    scrollToMobileIndex(next);
+  };
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        scrollToMobileIndex(0, false);
+      }
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [journeyData.length, videoCardExists]);
 
   // ─── 3D Card Styles ───────────────────────────────────────────────────────
   const getCardStyle = (index) => {
@@ -130,16 +187,6 @@ const Journey = () => {
     }
   };
 
-  const bgUrl = settings?.journey_background ?? "";
-  const isVideo = !!(
-    bgUrl.match(/\.(mp4|webm|ogg|mov)$/i) ||
-    bgUrl.includes("vimeo") ||
-    bgUrl.includes("youtube") ||
-    bgUrl.includes("youtu.be") ||
-    bgUrl.includes("stream")
-  );
-  const isImage = !!(bgUrl.startsWith("http") && !isVideo);
-
   useEffect(() => {
     if (isVideo && videoRef.current) {
       if (isSectionInView) {
@@ -178,7 +225,7 @@ const Journey = () => {
       {/* ─── Aesthetic Background Layer ─── */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         {isVideo ? (
-          <div className="absolute inset-0 w-full h-full">
+          <div className="hidden md:block absolute inset-0 w-full h-full">
             <video
               ref={videoRef}
               key={bgUrl}
@@ -187,7 +234,6 @@ const Journey = () => {
               loop
               playsInline
               className="w-full h-full object-cover scale-[1.02]"
-              poster={isImage ? bgUrl : ""}
               src={bgUrl}
             />
             {/* Cinematic Gradient Overlay */}
@@ -207,6 +253,16 @@ const Journey = () => {
           />
         ) : (
           <div className="absolute inset-0 bg-white" />
+        )}
+
+        {isVideo && (
+          <div className="md:hidden absolute inset-0 bg-gradient-to-b from-[#1a0a0e] via-[#2d1218] to-[#1a0a0e]">
+            {/* Subtle texture */}
+            <div className="absolute inset-0 opacity-[0.04] bg-[url('https://www.transparenttextures.com/patterns/natural-paper.png')]" />
+            {/* Gold accent lines */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-gold/30 to-transparent" />
+          </div>
         )}
 
         {/* Subtle Paper Texture Overlay */}
@@ -244,8 +300,14 @@ const Journey = () => {
           className="relative w-full mb-12 journey-wrapper"
           onMouseEnter={() => clearInterval(autoAdvanceRef.current)}
           onMouseLeave={resetAutoAdvance}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
+          onTouchStart={(e) => {
+            if (window.innerWidth < 768) handleMobileTouchStart(e);
+            else handleTouchStart(e);
+          }}
+          onTouchEnd={(e) => {
+            if (window.innerWidth < 768) handleMobileTouchEnd(e);
+            else handleTouchEnd(e);
+          }}
         >
           {/* Nav Arrows (Desktop) */}
           <button
@@ -285,12 +347,57 @@ const Journey = () => {
             className="journey-track"
             id="journey-track"
             ref={trackRef}
-            onScroll={handleScroll}
           >
+            {/* Video Card — Mobile Only */}
+            {videoCardExists && (
+              <div className="journey-card flex flex-col md:hidden flex-shrink-0">
+                {/* Landscape video area — tappable */}
+                <div
+                  className="relative w-full overflow-hidden bg-black cursor-pointer"
+                  style={{ aspectRatio: "16/9" }}
+                  onClick={() => setVideoFullscreen(true)}
+                >
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover"
+                    src={bgUrl}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
+                  {/* Tap to expand hint */}
+                  <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full">
+                    <svg className="w-3 h-3 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    </svg>
+                    <span className="text-[10px] text-white/70 font-light">Tap to expand</span>
+                  </div>
+                </div>
+
+                {/* Card content */}
+                <div className="p-[28px_24px] text-center flex flex-col items-center bg-ivory flex-grow">
+                  <p className="font-sans font-light text-[10px] text-gold tracking-[0.2em] uppercase mb-2.5">
+                    Our Story
+                  </p>
+                  <svg className="w-16 h-1 mb-2.5" viewBox="0 0 64 4" fill="none">
+                    <line x1="0" y1="2" x2="28" y2="2" stroke="#C9A84C" strokeWidth="0.8" />
+                    <circle cx="32" cy="2" r="2" fill="#C9A84C" />
+                    <line x1="36" y1="2" x2="64" y2="2" stroke="#C9A84C" strokeWidth="0.8" />
+                  </svg>
+                  <h4 className="font-serif italic text-[22px] text-maroon font-normal my-2.5">
+                    {settings?.couple_names || "Benjamin & Lina"}
+                  </h4>
+                  <p className="font-sans font-light text-[12px] text-charcoal/70 leading-[1.8] italic">
+                    {settings?.couple_quote || "A love story worth telling"}
+                  </p>
+                </div>
+              </div>
+            )}
             {journeyData.map((item, index) => (
               <div
                 key={item.id ?? index}
-                className="journey-card flex flex-col"
+                className="journey-card flex flex-col group"
                 data-index={index}
                 style={getCardStyle(index)}
                 onClick={() => {
@@ -302,7 +409,7 @@ const Journey = () => {
               >
                 {/* Card Image or Gradient */}
                 <div
-                  className={`h-[200px] w-full relative ${
+                  className={`h-[220px] md:h-[200px] w-full relative overflow-hidden ${
                     item.photo_url ? "" : `bg-gradient-to-br ${item.bg}`
                   }`}
                 >
@@ -310,7 +417,7 @@ const Journey = () => {
                     <img
                       src={item.photo_url}
                       alt={item.title}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105"
                       loading="lazy"
                     />
                   ) : (
@@ -363,18 +470,62 @@ const Journey = () => {
           className="flex justify-center gap-2 mt-4 relative z-20 pb-12 md:pb-0"
           id="journey-progress"
         >
-          {journeyData.map((_, index) => (
+          {/* Extra dot for video card — mobile only */}
+          {videoCardExists && (
             <div
-              key={index}
-              className={`h-1 transition-all duration-500 rounded-full ${
-                activeIndex === index
+              className={`md:hidden h-1 transition-all duration-500 rounded-full ${
+                activeIndex === 0
                   ? `w-16 ${isVideo ? "bg-gold shadow-[0_0_10px_rgba(201,168,76,0.5)]" : "bg-gold"}`
                   : `w-4 ${isVideo ? "bg-white/20" : "bg-gold/30"}`
               }`}
             />
-          ))}
+          )}
+          {journeyData.map((_, index) => {
+            const adjustedIndex = videoCardExists ? index + 1 : index;
+            return (
+              <div
+                key={index}
+                className={`h-1 transition-all duration-500 rounded-full ${
+                  activeIndex === adjustedIndex
+                    ? `w-16 ${isVideo ? "bg-gold shadow-[0_0_10px_rgba(201,168,76,0.5)]" : "bg-gold"}`
+                    : `w-4 ${isVideo ? "bg-white/20" : "bg-gold/30"}`
+                }`}
+              />
+            );
+          })}
         </div>
       </div>
+
+      {/* Video Fullscreen Overlay — Mobile */}
+      {videoFullscreen && (
+        <div
+          className="fixed inset-0 z-[200] bg-black flex items-center justify-center md:hidden"
+          onClick={() => setVideoFullscreen(false)}
+        >
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            controls
+            className="w-full h-full object-contain"
+            src={bgUrl}
+          />
+          {/* Close button */}
+          <button
+            onClick={() => setVideoFullscreen(false)}
+            className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center"
+          >
+            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          {/* Hint text */}
+          <p className="absolute bottom-8 left-0 right-0 text-center text-white/40 text-xs font-light">
+            Rotate your phone for full experience
+          </p>
+        </div>
+      )}
     </section>
   );
 };

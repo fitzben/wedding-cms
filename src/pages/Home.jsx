@@ -32,7 +32,6 @@ const SectionLoader = () => (
 const Home = () => {
   const { guestSlug } = useParams();
   const { guest, loading, notFound } = useGuest(guestSlug);
-  console.log({ guest });
   const { settings, loading: settingsLoading } = useSettings();
   const audioRef = useAudioControl();
   const [invitationOpened, setInvitationOpened] = useState(false);
@@ -130,11 +129,7 @@ const Home = () => {
 
   return (
     <div className="bg-offwhite text-charcoal font-sans antialiased selection:bg-maroon selection:text-offwhite relative overflow-x-hidden min-h-screen">
-      <audio
-        ref={audioRef}
-        src={audioSource}
-        loop
-      />
+      <audio ref={audioRef} src={audioSource} loop />
       <LoadingScreen isLoading={loading || settingsLoading} />
 
       {/* Inter-Section Transition Overlay */}
@@ -187,9 +182,11 @@ const Home = () => {
             if (audioRef.current) {
               // Set audio source only when opening invitation
               if (!audioSource) {
-                setAudioSource("https://res.cloudinary.com/dpsaoeync/video/upload/v1773335681/Unplanned_Melody_rfgslq.mp3");
+                setAudioSource(
+                  "https://res.cloudinary.com/dpsaoeync/video/upload/v1773335681/Unplanned_Melody_rfgslq.mp3",
+                );
               }
-              
+
               // Use a slight delay to ensure source is set before playing
               setTimeout(() => {
                 audioRef.current
