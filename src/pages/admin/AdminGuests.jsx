@@ -70,6 +70,96 @@ export const AdminGuests = () => {
 
   const duplicateGroups = findAllDuplicateGroups(allGuestNames);
 
+  const handleDownloadTemplate = () => {
+    import("xlsx").then((XLSX) => {
+      // ── Sheet 1: Template Input ──────────────────────────────────────────
+      const templateHeaders = [
+        "first_name", "last_name", "display_name", "phone_number",
+        "pax_allowed", "category", "priority", "importance",
+        "invitation_type", "guest_group_name", "notes",
+      ];
+
+      const exampleData = [
+        {
+          first_name: "John",
+          last_name: "Doe",
+          display_name: "John & Jane Doe",
+          phone_number: "6281234567890",
+          pax_allowed: 2,
+          category: "friend",
+          priority: "medium",
+          importance: "normal",
+          invitation_type: "digital",
+          guest_group_name: groups[0]?.name || "",
+          notes: "Contoh catatan — hapus baris ini",
+        },
+      ];
+
+      const sheet1 = XLSX.utils.json_to_sheet(exampleData, {
+        header: templateHeaders,
+      });
+
+      sheet1["!cols"] = [
+        { wch: 15 }, // first_name
+        { wch: 15 }, // last_name
+        { wch: 25 }, // display_name
+        { wch: 18 }, // phone_number
+        { wch: 10 }, // pax_allowed
+        { wch: 12 }, // category
+        { wch: 10 }, // priority
+        { wch: 12 }, // importance
+        { wch: 16 }, // invitation_type
+        { wch: 25 }, // guest_group_name
+        { wch: 30 }, // notes
+      ];
+
+      // ── Sheet 2: Referensi Master Data ───────────────────────────────────
+      const refData = [];
+
+      refData.push({ Tipe: "category", "Nilai Valid": "friend" });
+      refData.push({ Tipe: "", "Nilai Valid": "colleague" });
+      refData.push({ Tipe: "", "Nilai Valid": "family" });
+      refData.push({ Tipe: "", "Nilai Valid": "" });
+
+      refData.push({ Tipe: "priority", "Nilai Valid": "low" });
+      refData.push({ Tipe: "", "Nilai Valid": "medium" });
+      refData.push({ Tipe: "", "Nilai Valid": "high" });
+      refData.push({ Tipe: "", "Nilai Valid": "" });
+
+      refData.push({ Tipe: "importance", "Nilai Valid": "normal" });
+      refData.push({ Tipe: "", "Nilai Valid": "vip" });
+      refData.push({ Tipe: "", "Nilai Valid": "vvip" });
+      refData.push({ Tipe: "", "Nilai Valid": "" });
+
+      refData.push({ Tipe: "invitation_type", "Nilai Valid": "digital" });
+      refData.push({ Tipe: "", "Nilai Valid": "physical" });
+      refData.push({ Tipe: "", "Nilai Valid": "both" });
+      refData.push({ Tipe: "", "Nilai Valid": "" });
+
+      const sheet2 = XLSX.utils.json_to_sheet(refData, {
+        header: ["Tipe", "Nilai Valid"],
+      });
+
+      const groupStartRow = refData.length + 3;
+      XLSX.utils.sheet_add_aoa(sheet2, [
+        ["guest_group_name — Pilih salah satu:"],
+        ...(groups.length > 0
+          ? groups.map(g => [g.name])
+          : [["(belum ada grup — buat dulu di menu Groups)"]]
+        ),
+      ], { origin: { r: groupStartRow, c: 0 } });
+
+      sheet2["!cols"] = [{ wch: 20 }, { wch: 30 }];
+
+      // ── Build Workbook ───────────────────────────────────────────────────
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, sheet1, "Template Input");
+      XLSX.utils.book_append_sheet(workbook, sheet2, "Referensi Master Data");
+
+      XLSX.writeFile(workbook, "template_upload_guests.xlsx");
+    });
+  };
+
   const [copyMenu, setCopyMenu] = useState(null); // { guest, x, y } or null
   const openCopyMenu = (e, guest) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -502,6 +592,18 @@ export const AdminGuests = () => {
                   />
                 </svg>
                 Export All
+              </button>
+
+              {/* Download Template */}
+              <button
+                onClick={handleDownloadTemplate}
+                className="flex items-center gap-1.5 px-3.5 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-all"
+                title="Download template CSV dengan referensi master data dan daftar grup"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Template
               </button>
 
               {/* Import CSV */}
