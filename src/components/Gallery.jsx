@@ -275,8 +275,38 @@ const Gallery = () => {
   const hasExpandedOnce = expandStep >= 1;
   const sectionRef = useRef(null);
   const isSectionInView = useInView(sectionRef, { amount: 0.05, once: true });
+  const autoAdvanceRef = useRef(null);
+  const isHoveredRef = useRef(false);
+  const isAnimatingRef = useRef(false);
 
   useScrollReveal([media, loading, expandStep, currentIndex]);
+
+  // Mobile: 2 → 4 → carousel; Desktop: 3 → 6 → carousel
+  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const initialItems = isMobile ? 2 : 3;
+  const expandedItems = isMobile ? 4 : 6;
+  const canExpand = media.length > initialItems;
+  const canCarousel = media.length > expandedItems;
+
+  // Keep isAnimatingRef in sync to avoid stale closure in interval
+  useEffect(() => { isAnimatingRef.current = isAnimating; }, [isAnimating]);
+
+  // Auto-advance: only when expanded + carousel has more items than shown
+  useEffect(() => {
+    if (expandStep < 1 || !canCarousel || lightbox.open || media.length === 0) {
+      clearInterval(autoAdvanceRef.current);
+      return;
+    }
+    autoAdvanceRef.current = setInterval(() => {
+      if (isHoveredRef.current || isAnimatingRef.current) return;
+      setIsAnimating(true);
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + expandedItems) % media.length);
+        setIsAnimating(false);
+      }, 300);
+    }, 4000);
+    return () => clearInterval(autoAdvanceRef.current);
+  }, [expandStep, canCarousel, lightbox.open, media.length, expandedItems]);
 
   useEffect(() => {
     if (!isSectionInView) return;
@@ -299,16 +329,9 @@ const Gallery = () => {
     loadGallery();
   }, [isSectionInView]);
 
-  // Mobile: 2 → 4 → carousel; Desktop: 3 → 6 → carousel
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
-  const initialItems = isMobile ? 2 : 3;
-  const expandedItems = isMobile ? 4 : 6;
-
   // Calculate how many items to show based on expandStep
   const visibleMedia = [];
   const itemsToShow = expandStep === 0 ? initialItems : expandedItems;
-  const canExpand = media.length > initialItems;
-  const canCarousel = media.length > expandedItems;
   const showPagination =
     (expandStep === 0 && canExpand) ||
     (isMobile && expandStep >= 1 && canCarousel);
@@ -379,10 +402,12 @@ const Gallery = () => {
   };
 
   return (
-    <section 
+    <section
       ref={sectionRef}
-      id="section-gallery" 
+      id="section-gallery"
       className="pb-[100px] bg-offwhite relative"
+      onMouseEnter={() => { isHoveredRef.current = true; }}
+      onMouseLeave={() => { isHoveredRef.current = false; }}
     >
       {/* Lightbox */}
       {lightbox.open && (
