@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useScrollReveal } from "../hooks/useScrollReveal";
-import { getWishes } from "../services/wishService";
+import { getWishes, invalidateWishes } from "../services/wishService";
 import LogoLoader from "./LogoLoader";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -121,7 +121,8 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
       setStatus("success");
       // Clear message but keep name/pax/attendance for "Send Another" or consistency
       setFormData((prev) => ({ ...prev, message: "" }));
-      // Refresh wishes list
+      // Invalidate cache then refetch so new wish appears immediately
+      invalidateWishes();
       fetchWishes();
     } catch (error) {
       console.error("Submission Error:", error);

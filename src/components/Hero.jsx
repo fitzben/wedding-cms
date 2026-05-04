@@ -68,7 +68,7 @@ const Hero = ({ guestName, onOpenInvitation }) => {
         isOpened ? "opacity-0 scale-[1.04]" : "opacity-100 scale-100"
       }`}
       style={{ transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)" }}
-      aria-hidden={isOpened ? "true" : "false"}
+      inert={isOpened ? "" : undefined}
     >
       <div className="absolute inset-0 w-full h-full">
         <div className="absolute inset-0 bg-gradient-to-br from-[#1A1A1A] via-[#4a0611] to-[#1A1A1A] scale-105 transition-transform duration-[20000ms] ease-out hover:scale-110"></div>

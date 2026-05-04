@@ -1,12 +1,16 @@
 import { apiClient } from './apiClient';
 import { apiCache } from './apiCache';
 
-export const getWishes = async () => {
-  const cacheKey = 'public_wishes';
+const WISHES_CACHE_KEY = 'public_wishes';
 
-  return apiCache.fetch(cacheKey, async () => {
+export const getWishes = async () => {
+  return apiCache.fetch(WISHES_CACHE_KEY, async () => {
     const data = await apiClient.get('/api/wishes');
     return data.wishes;
   });
+};
+
+export const invalidateWishes = () => {
+  apiCache.delete(WISHES_CACHE_KEY);
 };
 

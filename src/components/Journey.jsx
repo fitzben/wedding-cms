@@ -12,7 +12,10 @@ const Journey = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [videoFullscreen, setVideoFullscreen] = useState(false);
   const trackRef = useRef(null);
+  const wrapperRef = useRef(null);
   const mobileIndexRef = useRef(0);
+  const mobileCurrentTranslate = useRef(0);
+  const mobileIsHorizontal = useRef(false);
   const autoAdvanceRef = useRef(null);
   const sectionRef = useRef(null);
   const videoRef = useRef(null);
@@ -99,12 +102,14 @@ const Journey = () => {
     if (!trackRef.current || window.innerWidth >= 768) return;
     const cardWidth = window.innerWidth * 0.85 + 16;
     const offset = index * cardWidth - (window.innerWidth - window.innerWidth * 0.85) / 2;
+    const translate = -Math.max(0, offset);
     if (animate) {
       trackRef.current.style.transition = "transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
     } else {
       trackRef.current.style.transition = "none";
     }
-    trackRef.current.style.transform = `translateX(-${Math.max(0, offset)}px)`;
+    trackRef.current.style.transform = `translateX(${translate}px)`;
+    mobileCurrentTranslate.current = translate;
     mobileIndexRef.current = index;
     setActiveIndex(index);
   };
@@ -114,21 +119,48 @@ const Journey = () => {
     mobileSwipeStartX.current = e.changedTouches[0].screenX;
     mobileSwipeStartY.current = e.changedTouches[0].screenY;
     isSwiping.current = false;
+    mobileIsHorizontal.current = false;
+    if (trackRef.current) trackRef.current.style.transition = "none";
   };
 
   const handleMobileTouchEnd = (e) => {
     if (window.innerWidth >= 768) return;
     const dx = e.changedTouches[0].screenX - mobileSwipeStartX.current;
     const dy = e.changedTouches[0].screenY - mobileSwipeStartY.current;
-    if (Math.abs(dy) > Math.abs(dx)) return;
-    if (Math.abs(dx) < 40) return;
-
+    if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 40) {
+      scrollToMobileIndex(mobileIndexRef.current);
+      return;
+    }
     const mobileTotal = getMobileTotal();
     let next = mobileIndexRef.current;
     if (dx < 0) next = (next + 1) % mobileTotal;
     else next = (next - 1 + mobileTotal) % mobileTotal;
     scrollToMobileIndex(next);
   };
+
+  // Live drag feedback for mobile carousel
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    const onMove = (e) => {
+      if (window.innerWidth >= 768) return;
+      const touch = e.changedTouches?.[0];
+      if (!touch) return;
+      const dx = touch.screenX - mobileSwipeStartX.current;
+      const dy = touch.screenY - mobileSwipeStartY.current;
+      if (!mobileIsHorizontal.current) {
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8)
+          mobileIsHorizontal.current = true;
+        else return;
+      }
+      e.preventDefault();
+      if (trackRef.current) {
+        trackRef.current.style.transform = `translateX(${mobileCurrentTranslate.current + dx}px)`;
+      }
+    };
+    el.addEventListener("touchmove", onMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onMove);
+  }, []);
 
   useEffect(() => {
     const handleResize = () => {
@@ -297,6 +329,7 @@ const Journey = () => {
 
         {/* 3D Carousel / Mobile Snap */}
         <div
+          ref={wrapperRef}
           className="relative w-full mb-12 journey-wrapper"
           onMouseEnter={() => clearInterval(autoAdvanceRef.current)}
           onMouseLeave={resetAutoAdvance}

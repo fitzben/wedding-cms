@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import useSettings from "../hooks/useSettings";
 import { useParams } from "react-router-dom";
@@ -49,6 +49,7 @@ function ClaimModal({ item, onClose, onSuccess, guestName }) {
     message: "",
     quantity: 1,
   });
+  const [imgError, setImgError] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(null); // result after success
@@ -149,13 +150,18 @@ function ClaimModal({ item, onClose, onSuccess, guestName }) {
           /* ── Form state ── */
           <div className="p-6 sm:p-8">
             <div className="flex items-start gap-4 mb-6">
-              {item.image_url && (
+              {item.image_url && !imgError && (
                 <img
                   src={item.image_url}
                   alt={item.name}
                   className="w-16 h-16 object-cover rounded-lg border border-gold/20 flex-shrink-0"
-                  onError={(e) => (e.target.style.display = "none")}
+                  onError={() => setImgError(true)}
                 />
+              )}
+              {(!item.image_url || imgError) && (
+                <div className="w-16 h-16 rounded-lg border border-gold/20 bg-gold/5 flex items-center justify-center text-2xl flex-shrink-0">
+                  🎁
+                </div>
               )}
               <div className="min-w-0">
                 <p className="font-serif italic text-xl text-ivory leading-tight">
@@ -282,6 +288,7 @@ function ClaimModal({ item, onClose, onSuccess, guestName }) {
 // ─── Gift Card ────────────────────────────────────────────────────────────────
 function GiftCard({ item, onClaim }) {
   const [hovered, setHovered] = useState(false);
+  const [imgError, setImgError] = useState(false);
   const isFull = item.quantity_claimed >= item.quantity_needed;
   const isDesktop = typeof window !== "undefined" && window.innerWidth > 767;
 
@@ -329,12 +336,12 @@ function GiftCard({ item, onClaim }) {
 
       {/* Image */}
       <div className="h-[180px] overflow-hidden relative bg-gradient-to-br from-[#3d0510] to-maroon">
-        {item.image_url ? (
+        {item.image_url && !imgError ? (
           <img
             src={item.image_url}
             alt={item.name}
             className={`w-full h-full object-cover transition-transform duration-500 block ${hovered && isDesktop ? "scale-[1.08]" : ""}`}
-            onError={(e) => (e.target.style.display = "none")}
+            onError={() => setImgError(true)}
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-4xl opacity-30">
@@ -416,6 +423,75 @@ const GiftRegistry = () => {
   const [items, setItems] = useState([]);
   const [loadingItems, setLoadingItems] = useState(true);
   const [claimTarget, setClaimTarget] = useState(null); // item being claimed
+
+  // ─── Gift Carousel (mobile) ─────────────────────────────────────────────
+  const giftWrapRef = useRef(null);
+  const giftTrackRef = useRef(null);
+  const giftIndexRef = useRef(0);
+  const giftSwipeStartX = useRef(0);
+  const giftSwipeStartY = useRef(0);
+  const giftCurrentTranslate = useRef(0);
+  const giftIsHorizontal = useRef(false);
+  const [giftActiveIndex, setGiftActiveIndex] = useState(0);
+
+  const scrollToGiftIndex = (index, animate = true) => {
+    if (!giftTrackRef.current) return;
+    const vw = window.innerWidth;
+    const cardWidth = vw * 0.85 + 16;
+    const offset = index * cardWidth - (vw - vw * 0.85) / 2;
+    const translate = -Math.max(0, offset);
+    giftTrackRef.current.style.transition = animate
+      ? "transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+      : "none";
+    giftTrackRef.current.style.transform = `translateX(${translate}px)`;
+    giftCurrentTranslate.current = translate;
+    giftIndexRef.current = index;
+    setGiftActiveIndex(index);
+  };
+
+  const handleGiftTouchStart = (e) => {
+    giftSwipeStartX.current = e.changedTouches[0].screenX;
+    giftSwipeStartY.current = e.changedTouches[0].screenY;
+    giftIsHorizontal.current = false;
+    if (giftTrackRef.current) giftTrackRef.current.style.transition = "none";
+  };
+
+  const handleGiftTouchEnd = (e) => {
+    const dx = e.changedTouches[0].screenX - giftSwipeStartX.current;
+    const dy = e.changedTouches[0].screenY - giftSwipeStartY.current;
+    if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 40) {
+      scrollToGiftIndex(giftIndexRef.current);
+      return;
+    }
+    const total = items.length;
+    const next =
+      dx < 0
+        ? Math.min(giftIndexRef.current + 1, total - 1)
+        : Math.max(giftIndexRef.current - 1, 0);
+    scrollToGiftIndex(next);
+  };
+
+  useEffect(() => {
+    const el = giftWrapRef.current;
+    if (!el) return;
+    const onMove = (e) => {
+      const touch = e.changedTouches?.[0];
+      if (!touch) return;
+      const dx = touch.screenX - giftSwipeStartX.current;
+      const dy = touch.screenY - giftSwipeStartY.current;
+      if (!giftIsHorizontal.current) {
+        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8)
+          giftIsHorizontal.current = true;
+        else return;
+      }
+      e.preventDefault();
+      if (giftTrackRef.current) {
+        giftTrackRef.current.style.transform = `translateX(${giftCurrentTranslate.current + dx}px)`;
+      }
+    };
+    el.addEventListener("touchmove", onMove, { passive: false });
+    return () => el.removeEventListener("touchmove", onMove);
+  }, [items.length]);
 
   useEffect(() => {
     API.list()
@@ -609,35 +685,97 @@ const GiftRegistry = () => {
             </h3>
 
             {loadingItems ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="rounded border border-gold/10 overflow-hidden animate-pulse"
-                  >
-                    <div className="h-[180px] bg-gold/5" />
-                    <div className="p-5 space-y-2">
-                      <div className="h-3 bg-gold/10 rounded w-1/3" />
-                      <div className="h-6 bg-gold/10 rounded w-3/4" />
-                      <div className="h-2 bg-gold/10 rounded w-full" />
-                    </div>
+              <>
+                {/* Mobile skeleton carousel */}
+                <div className="sm:hidden overflow-hidden">
+                  <div className="flex gap-4" style={{ padding: "0 7.5vw 8px" }}>
+                    {[1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="flex-shrink-0 rounded border border-gold/10 overflow-hidden animate-pulse"
+                        style={{ width: "85vw" }}
+                      >
+                        <div className="h-[180px] bg-gold/5" />
+                        <div className="p-5 space-y-2">
+                          <div className="h-3 bg-gold/10 rounded w-1/3" />
+                          <div className="h-6 bg-gold/10 rounded w-3/4" />
+                          <div className="h-2 bg-gold/10 rounded w-full" />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+                {/* Desktop skeleton grid */}
+                <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-3 gap-5">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="rounded border border-gold/10 overflow-hidden animate-pulse"
+                    >
+                      <div className="h-[180px] bg-gold/5" />
+                      <div className="p-5 space-y-2">
+                        <div className="h-3 bg-gold/10 rounded w-1/3" />
+                        <div className="h-6 bg-gold/10 rounded w-3/4" />
+                        <div className="h-2 bg-gold/10 rounded w-full" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : items.length === 0 ? (
               <p className="text-center font-sans font-light text-[13px] text-charcoal/40 italic py-12">
                 Gift registry belum tersedia.
               </p>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
-                {items.map((item) => (
-                  <GiftCard
-                    key={item.id}
-                    item={item}
-                    onClaim={setClaimTarget}
-                  />
-                ))}
-              </div>
+              <>
+                {/* Mobile: swipe carousel */}
+                <div
+                  ref={giftWrapRef}
+                  className="sm:hidden overflow-hidden"
+                  onTouchStart={handleGiftTouchStart}
+                  onTouchEnd={handleGiftTouchEnd}
+                >
+                  <div
+                    ref={giftTrackRef}
+                    className="flex gap-4 pb-2"
+                    style={{ padding: "0 7.5vw 8px", willChange: "transform" }}
+                  >
+                    {items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex-shrink-0"
+                        style={{ width: "85vw" }}
+                      >
+                        <GiftCard item={item} onClaim={setClaimTarget} />
+                      </div>
+                    ))}
+                  </div>
+                  {/* Dot indicators */}
+                  <div className="flex justify-center gap-2 mt-4">
+                    {items.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1 rounded-full transition-all duration-500 ${
+                          giftActiveIndex === i
+                            ? "w-10 bg-gold"
+                            : "w-2.5 bg-gold/30"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Desktop: grid */}
+                <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-3 gap-5">
+                  {items.map((item) => (
+                    <GiftCard
+                      key={item.id}
+                      item={item}
+                      onClaim={setClaimTarget}
+                    />
+                  ))}
+                </div>
+              </>
             )}
           </div>
 

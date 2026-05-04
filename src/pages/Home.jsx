@@ -37,7 +37,7 @@ const Home = () => {
   const [invitationOpened, setInvitationOpened] = useState(false);
   const [transitionRendered, setTransitionRendered] = useState(false);
   const [transitionVisible, setTransitionVisible] = useState(false);
-  const [audioSource, setAudioSource] = useState("");
+  const [audioSource, setAudioSource] = useState(null);
   const guestName = guest?.enable_display_name
     ? guest.display_name
     : guest
@@ -129,7 +129,7 @@ const Home = () => {
 
   return (
     <div className="bg-offwhite text-charcoal font-sans antialiased selection:bg-maroon selection:text-offwhite relative overflow-x-hidden min-h-screen">
-      <audio ref={audioRef} src={audioSource} loop />
+      {audioSource && <audio ref={audioRef} src={audioSource} loop />}
       <LoadingScreen isLoading={loading || settingsLoading} />
 
       {/* Inter-Section Transition Overlay */}
