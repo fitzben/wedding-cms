@@ -14,6 +14,7 @@ export function GuestCards({
   toggleAll,
   toggleOne,
   openEdit,
+  handleUpdatePax,
   handleDelete,
   handleRestore,
   handleMarkInvited,
@@ -178,9 +179,33 @@ export function GuestCards({
 
                   {/* Pax */}
                   <div className="flex-shrink-0 flex flex-col items-center">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-black text-gray-700">
-                      {guest.pax_allowed}
-                    </div>
+                    {isAdmin && !isDeleted ? (
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        defaultValue={guest.pax_allowed}
+                        onClick={(e) => e.stopPropagation()}
+                        onBlur={(e) => {
+                          const newPax = parseInt(e.target.value, 10);
+                          if (!isNaN(newPax) && newPax !== guest.pax_allowed && newPax > 0) {
+                            handleUpdatePax(guest.id, newPax);
+                          } else {
+                            e.target.value = guest.pax_allowed;
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.target.blur();
+                          }
+                        }}
+                        className="w-10 h-8 rounded-lg bg-gray-100 border border-gray-200 text-center text-xs font-black text-gray-700 outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+                      />
+                    ) : (
+                      <div className="w-8 h-8 rounded-full bg-gray-100 border border-gray-200 flex items-center justify-center text-xs font-black text-gray-700">
+                        {guest.pax_allowed}
+                      </div>
+                    )}
                     <span className="text-[9px] text-gray-400 mt-0.5">
                       pax
                     </span>

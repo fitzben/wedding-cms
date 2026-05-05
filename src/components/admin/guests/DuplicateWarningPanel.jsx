@@ -49,12 +49,12 @@ export function findAllDuplicateGroups(guests, dismissedPairs = new Set()) {
   const visited = new Set();
 
   for (let i = 0; i < guests.length; i++) {
-    if (visited.has(guests[i].id)) continue;
+    if (visited.has(guests[i].id) || guests[i].is_verified) continue;
     const group = [guests[i]];
     const coreI = getCoreName(guests[i]);
 
     for (let j = i + 1; j < guests.length; j++) {
-      if (visited.has(guests[j].id)) continue;
+      if (visited.has(guests[j].id) || guests[j].is_verified) continue;
       const pairKey = [guests[i].id, guests[j].id].sort().join(":");
       if (dismissedPairs.has(pairKey)) continue;
 
@@ -74,14 +74,19 @@ export function findAllDuplicateGroups(guests, dismissedPairs = new Set()) {
   return groups;
 }
 
-export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
+export function DuplicateWarningPanel({
+  groups,
+  onDelete,
+  adminUsers,
+  handleMarkVerified,
+}) {
   const [expanded, setExpanded] = useState(true);
   const [dismissedPairs, setDismissedPairs] = useState(() => {
     try {
-      const stored = sessionStorage.getItem("guest_dismissed_pairs");
+      const stored = localStorage.getItem("guest_dismissed_pairs");
       return new Set(stored ? JSON.parse(stored) : []);
     } catch {
-      return new Set(); // sessionStorage unavailable
+      return new Set(); // localStorage unavailable
     }
   });
 
@@ -99,6 +104,8 @@ export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
     .filter((group) => group.length >= 2);
 
   const handleAcceptGroup = (group) => {
+    const ids = group.map((g) => g.id);
+    handleMarkVerified(ids);
     setDismissedPairs((prev) => {
       const next = new Set(prev);
       for (let i = 0; i < group.length; i++) {
@@ -107,7 +114,7 @@ export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
         }
       }
       try {
-        sessionStorage.setItem(
+        localStorage.setItem(
           "guest_dismissed_pairs",
           JSON.stringify([...next]),
         );
@@ -223,13 +230,14 @@ export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
                         {undismissedPairs.length >= 1 && (
                           <button
                             onClick={() => {
+                              handleMarkVerified([g.id]);
                               setDismissedPairs((prev) => {
                                 const next = new Set(prev);
                                 undismissedPairs.forEach((other) => {
                                   next.add([g.id, other.id].sort().join(":"));
                                 });
                                 try {
-                                  sessionStorage.setItem(
+                                  localStorage.setItem(
                                     "guest_dismissed_pairs",
                                     JSON.stringify([...next]),
                                   );
@@ -270,7 +278,7 @@ export function DuplicateWarningPanel({ groups, onDelete, adminUsers }) {
               onClick={() => {
                 setDismissedPairs(new Set());
                 try {
-                  sessionStorage.removeItem("guest_dismissed_pairs");
+                  localStorage.removeItem("guest_dismissed_pairs");
                 } catch {
                   /* ignore */
                 }

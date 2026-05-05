@@ -33,6 +33,7 @@ export const AdminGuests = () => {
     showFilters,
     setShowFilters,
     limit,
+    handleSetLimit,
     selected,
     allSelected,
     toggleAll,
@@ -43,6 +44,8 @@ export const AdminGuests = () => {
     openCreate,
     openEdit,
     handleSave,
+    handleMarkVerified,
+    handleUpdatePax,
     handleBulkDelete,
     handleDelete,
     handleRestore,
@@ -714,6 +717,7 @@ export const AdminGuests = () => {
           groups={duplicateGroups}
           onDelete={handleDelete}
           adminUsers={adminUsers}
+          handleMarkVerified={handleMarkVerified}
         />
 
         {/* ── Table ── */}
@@ -732,6 +736,7 @@ export const AdminGuests = () => {
             toggleAll={toggleAll}
             toggleOne={toggleOne}
             openEdit={openEdit}
+            handleUpdatePax={handleUpdatePax}
             handleDelete={handleDelete}
             handleRestore={handleRestore}
             handleMarkInvited={handleMarkInvited}
@@ -752,6 +757,7 @@ export const AdminGuests = () => {
             toggleAll={toggleAll}
             toggleOne={toggleOne}
             openEdit={openEdit}
+            handleUpdatePax={handleUpdatePax}
             handleDelete={handleDelete}
             handleRestore={handleRestore}
             handleMarkInvited={handleMarkInvited}
@@ -766,17 +772,34 @@ export const AdminGuests = () => {
           {/* ── Pagination ── */}
           {!loading && totalPages > 1 && (
             <div className="mt-4 px-4 md:px-0 flex flex-col sm:flex-row justify-between items-center text-sm text-gray-500 gap-4">
-              <div>
-                Showing{" "}
-                <span className="font-bold text-gray-900">
-                  {(page - 1) * limit + 1}
-                </span>{" "}
-                –{" "}
-                <span className="font-bold text-gray-900">
-                  {Math.min(page * limit, total)}
-                </span>{" "}
-                of <span className="font-bold text-gray-900">{total}</span>{" "}
-                guests
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-gray-400">Limit:</span>
+                  <select
+                    value={limit}
+                    onChange={(e) => handleSetLimit(parseInt(e.target.value))}
+                    className="bg-white border border-gray-200 rounded-lg text-xs font-bold px-2 py-1 outline-none focus:ring-2 focus:ring-gray-100"
+                  >
+                    {[10, 25, 50, 100].map((l) => (
+                      <option key={l} value={l}>
+                        {l}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="w-px h-4 bg-gray-100" />
+                <div>
+                  Showing{" "}
+                  <span className="font-bold text-gray-900">
+                    {(page - 1) * limit + 1}
+                  </span>{" "}
+                  –{" "}
+                  <span className="font-bold text-gray-900">
+                    {Math.min(page * limit, total)}
+                  </span>{" "}
+                  of <span className="font-bold text-gray-900">{total}</span>{" "}
+                  guests
+                </div>
               </div>
               <div className="flex items-center gap-1">
                 <button

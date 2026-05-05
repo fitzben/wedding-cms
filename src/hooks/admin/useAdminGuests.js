@@ -3,8 +3,6 @@ import * as authService from "../../services/authService";
 import { apiCache } from "../../services/apiCache";
 import { apiClient } from "../../services/apiClient";
 
-const limit = 10;
-
 const API = {
   list: (page, limit, search, showDeleted = false, filters = {}) => {
     const params = new URLSearchParams({
@@ -90,6 +88,15 @@ export default function useAdminGuests() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(() => {
+    return parseInt(localStorage.getItem("admin_guests_limit") || "10");
+  });
+
+  const handleSetLimit = (newLimit) => {
+    setLimit(newLimit);
+    localStorage.setItem("admin_guests_limit", newLimit.toString());
+    setPage(1); // Reset to first page when limit changes
+  };
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [showDeleted, setShowDeleted] = useState(false);
@@ -184,7 +191,7 @@ export default function useAdminGuests() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, showDeleted, filters]);
+  }, [page, limit, search, showDeleted, filters]);
 
   useEffect(() => {
     fetchGuests();
@@ -193,7 +200,7 @@ export default function useAdminGuests() {
   // ── Clear selection when page/search/showDeleted/filters changes ──
   useEffect(() => {
     setSelected(new Set());
-  }, [page, search, showDeleted, filters]);
+  }, [page, limit, search, showDeleted, filters]);
 
   const setFilter = (key, val) => {
     setFilters((prev) => ({ ...prev, [key]: val }));
@@ -237,6 +244,39 @@ export default function useAdminGuests() {
     }
     invalidateGuestCache(editGuest?.slug);
     fetchGuests();
+  };
+
+  const handleMarkVerified = async (ids) => {
+    try {
+      await Promise.all(ids.map((id) => API.update(id, { is_verified: true })));
+      setGuests((prev) =>
+        prev.map((g) => (ids.includes(g.id) ? { ...g, is_verified: true } : g)),
+      );
+      invalidateGuestCache();
+      // Re-fetch all names so the duplicate groups state (findAllDuplicateGroups) is updated
+      apiClient.get("/api/admin/guests/names")
+        .then((r) => setAllGuestNames(r.names || []))
+        .catch(() => {});
+    } catch {
+      push("Failed to mark guests as verified", "error");
+    }
+  };
+  const handleUpdatePax = async (id, newPax) => {
+    try {
+      const res = await API.update(id, { pax_allowed: newPax });
+      if (res.error) {
+        push(res.error, "error");
+        return;
+      }
+      setGuests((prev) =>
+        prev.map((g) => (g.id === id ? { ...g, pax_allowed: newPax } : g)),
+      );
+      // We don't strictly need to invalidate cache if we update local state,
+      // but let's do it to be safe for other parts of the app.
+      invalidateGuestCache();
+    } catch {
+      push("Failed to update pax", "error");
+    }
   };
 
   const handleDelete = (id, name) => {
@@ -509,9 +549,6 @@ export default function useAdminGuests() {
     total,
 
     // paging/search
-    page,
-    setPage,
-    limit,
     searchInput,
     setSearchInput,
     search,
@@ -529,7 +566,11 @@ export default function useAdminGuests() {
     clearFilters,
     activeFilterCount,
 
-    // computed
+    // pagination
+    page,
+    setPage,
+    limit,
+    handleSetLimit,
     totalPages,
 
     // selection
@@ -545,8 +586,9 @@ export default function useAdminGuests() {
     openCreate,
     openEdit,
     handleSave,
-
+    handleMarkVerified,
     // actions
+    handleUpdatePax,
     handleDelete,
     handleRestore,
     handleBulkDelete,
