@@ -14,6 +14,7 @@ export function GuestTable({
   toggleAll,
   toggleOne,
   openEdit,
+  handleUpdatePax,
   handleDelete,
   handleRestore,
   handleMarkInvited,
@@ -197,9 +198,33 @@ export function GuestTable({
 
                   {/* Pax */}
                   <td className="py-2 px-3 text-center">
-                    <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-700 text-xs font-bold border border-gray-200">
-                      {guest.pax_allowed}
-                    </span>
+                    {isAdmin && !isDeleted ? (
+                      <input
+                        type="number"
+                        min={1}
+                        max={20}
+                        defaultValue={guest.pax_allowed}
+                        onBlur={(e) => {
+                          const newPax = parseInt(e.target.value, 10);
+                          if (!isNaN(newPax) && newPax !== guest.pax_allowed && newPax > 0) {
+                            handleUpdatePax(guest.id, newPax);
+                          } else {
+                            e.target.value = guest.pax_allowed;
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.target.blur();
+                          }
+                        }}
+                        className="w-12 h-6 text-center text-xs font-bold bg-white border border-gray-200 rounded outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-400"
+                        title="Edit limit pax (Enter untuk save)"
+                      />
+                    ) : (
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-700 text-xs font-bold border border-gray-200">
+                        {guest.pax_allowed}
+                      </span>
+                    )}
                   </td>
 
                   {/* Undangan */}
