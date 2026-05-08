@@ -86,6 +86,10 @@ const EMPTY_FILTERS = {
 };
 
 export default function useAdminGuests() {
+  const user = authService.getAdminUser();
+  const isAdmin = user?.role === "admin" || user?.role === "parents";
+  const currentUserId = user?.id || "";
+
   const [guests, setGuests] = useState([]);
   const [allGuestNames, setAllGuestNames] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +110,7 @@ export default function useAdminGuests() {
   const [showDeleted, setShowDeleted] = useState(false);
   const [groups, setGroups] = useState([]);
   const [adminUsers, setAdminUsers] = useState([]);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [filters, setFilters] = useState({ ...EMPTY_FILTERS, created_by: currentUserId });
   const [showFilters, setShowFilters] = useState(false);
 
   // Modal state
@@ -129,10 +133,6 @@ export default function useAdminGuests() {
   const [waBlastOpen, setWaBlastOpen] = useState(false);
 
   const { toasts, push } = useToast();
-
-  const user = authService.getAdminUser();
-  const isAdmin = user?.role === "admin" || user?.role === "parents";
-  const currentUserId = user?.user_id || "";
 
   // ── Load groups + WA template once ──
   useEffect(() => {
@@ -160,7 +160,7 @@ export default function useAdminGuests() {
     if (showFilters && !filters.created_by && currentUserId) {
       setFilter("created_by", currentUserId);
     }
-  }, [showFilters]);
+  }, [showFilters, currentUserId, filters.created_by]);
 
   // ── Debounced search ──
   useEffect(() => {
