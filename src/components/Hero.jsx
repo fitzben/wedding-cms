@@ -64,7 +64,7 @@ const Hero = ({ guestName, onOpenInvitation }) => {
   return (
     <header
       id="hero-section"
-      className={`relative min-h-screen flex flex-col items-center justify-between overflow-hidden bg-black py-20 w-full transition-all duration-600 ${
+      className={`relative min-h-screen min-h-[100dvh] flex flex-col items-center justify-between overflow-y-auto overflow-x-hidden bg-black py-10 md:py-20 w-full transition-all duration-600 ${
         isOpened ? "opacity-0 scale-[1.04]" : "opacity-100 scale-100"
       }`}
       style={{ transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)" }}
@@ -77,29 +77,29 @@ const Hero = ({ guestName, onOpenInvitation }) => {
         <div className="absolute inset-0 bg-black/40"></div>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 w-full flex-grow mt-12">
-        <p className="uppercase text-[11px] font-light text-ivory tracking-[0.3em] mb-12 opacity-70 hero-elem anim-hero-label">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 w-full flex-grow mt-6 md:mt-12">
+        <p className="uppercase text-[10px] md:text-[11px] font-light text-ivory tracking-[0.3em] mb-8 md:mb-12 opacity-70 hero-elem anim-hero-label">
           The Wedding Of
         </p>
 
         {/* STACKED NAMES WITH GHOST & */}
-        <div className="relative flex flex-col items-center justify-center z-10 w-full mb-8">
+        <div className="relative flex flex-col items-center justify-center z-10 w-full mb-4 md:mb-8">
           {/* Ghost "&" Watermark */}
           <span
-            className="absolute top-1/2 left-1/2 font-serif italic text-[clamp(200px,30vw,400px)] text-gold/[0.06] pointer-events-none select-none z-0 hero-elem anim-hero-ghost"
+            className="absolute top-1/2 left-1/2 font-serif italic text-[clamp(150px,25vw,400px)] md:text-[clamp(200px,30vw,400px)] text-gold/[0.06] pointer-events-none select-none z-0 hero-elem anim-hero-ghost"
             style={{ lineHeight: 1 }}
           >
             &amp;
           </span>
 
           {/* Benjamin */}
-          <span className="font-script text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name1">
+          <span className="font-script text-[clamp(60px,10vw,150px)] md:text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name1">
             {groomName}
           </span>
 
           {/* Thin Makassar Rule */}
           <svg
-            className="w-[160px] h-[8px] my-4 z-10 hero-elem anim-hero-rule"
+            className="w-[120px] md:w-[160px] h-[8px] my-3 md:my-4 z-10 hero-elem anim-hero-rule"
             viewBox="0 0 160 8"
             fill="none"
             stroke="#C9A84C"
@@ -111,31 +111,31 @@ const Hero = ({ guestName, onOpenInvitation }) => {
           </svg>
 
           {/* Angelin */}
-          <span className="font-script text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name2">
+          <span className="font-script text-[clamp(60px,10vw,150px)] md:text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name2">
             {brideName}
           </span>
         </div>
 
-        <p className="text-offwhite text-xs uppercase tracking-[0.3em] mt-8 hero-elem anim-hero-date">
+        <p className="text-offwhite text-[10px] md:text-xs uppercase tracking-[0.3em] mt-4 md:mt-8 hero-elem anim-hero-date">
           Sunday &middot; {weddingDate}
         </p>
       </div>
 
-      <div className="flex flex-col w-full z-10 pt-16 px-6 relative items-center">
+      <div className="flex flex-col w-full z-10 pt-8 md:pt-16 px-6 relative items-center">
         <div className="hero-elem anim-hero-guest flex flex-col items-center">
-          <p className="text-offwhite/80 text-sm mb-2 font-light italic font-serif">
+          <p className="text-offwhite/80 text-xs md:text-sm mb-1 md:mb-2 font-light italic font-serif">
             Dear,
           </p>
-          <p className="text-2xl font-serif tracking-tight mb-10 font-normal text-white capitalize">
+          <p className="text-xl md:text-2xl font-serif tracking-tight mb-6 md:mb-10 font-normal text-white capitalize">
             {guestName || "Guest Name"}
           </p>
         </div>
 
         <button
           onClick={handleOpenClick}
-          className="group relative inline-flex items-center justify-center gap-4 px-8 py-4 border border-maroon text-offwhite rounded-full overflow-hidden transition-all duration-700 hover:bg-maroon hero-elem anim-hero-btn bg-transparent cursor-pointer"
+          className="group relative inline-flex items-center justify-center gap-4 px-8 py-3.5 md:py-4 border border-maroon text-offwhite rounded-full overflow-hidden transition-all duration-700 hover:bg-maroon hero-elem anim-hero-btn bg-transparent cursor-pointer"
         >
-          <span className="relative z-10 text-xs tracking-[0.2em] uppercase font-light">
+          <span className="relative z-10 text-[10px] md:text-xs tracking-[0.2em] uppercase font-light">
             Open Invitation
           </span>
           <Icon

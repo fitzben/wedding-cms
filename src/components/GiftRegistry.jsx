@@ -286,23 +286,32 @@ function ClaimModal({ item, onClose, onSuccess, guestName }) {
 }
 
 // ─── Gift Card ────────────────────────────────────────────────────────────────
-function GiftCard({ item, onClaim }) {
+function GiftCard({ item, onClaim, index }) {
   const [hovered, setHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
   const isFull = item.quantity_claimed >= item.quantity_needed;
   const isDesktop = typeof window !== "undefined" && window.innerWidth > 767;
 
+  // Pattern-based styling
+  const isEven = index % 2 === 0;
+  
+  // Height variations: Even is larger, Odd is smaller
+  const imageHeight = isEven ? "h-[220px]" : "h-[180px]";
+  
+  // Vertical offset for zigzag effect (Odd indices shifted down)
+  const verticalShift = isEven ? "translateY(0)" : "translateY(40px)";
+  
   return (
     <div
       className="group relative"
       style={{
         background: "white",
         border: `1px solid ${hovered && isDesktop ? "rgba(201,168,76,0.7)" : "rgba(201,168,76,0.25)"}`,
-        borderRadius: "6px",
+        borderRadius: "8px",
         overflow: "hidden",
-        transition: "all 0.35s cubic-bezier(0.16,1,0.3,1)",
-        transform: hovered && isDesktop ? "translateY(-6px)" : "",
-        boxShadow: hovered && isDesktop ? "0 20px 60px rgba(61,5,16,0.15)" : "",
+        transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)",
+        transform: `${verticalShift} ${hovered && isDesktop ? "scale(1.02) translateY(-10px)" : ""}`,
+        boxShadow: hovered && isDesktop ? "0 25px 50px -12px rgba(61,5,16,0.15)" : "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -335,12 +344,12 @@ function GiftCard({ item, onClaim }) {
       )}
 
       {/* Image */}
-      <div className="h-[180px] overflow-hidden relative bg-gradient-to-br from-[#3d0510] to-maroon">
+      <div className={`${imageHeight} overflow-hidden relative bg-gradient-to-br from-[#3d0510] to-maroon`}>
         {item.image_url && !imgError ? (
           <img
             src={item.image_url}
             alt={item.name}
-            className={`w-full h-full object-cover transition-transform duration-500 block ${hovered && isDesktop ? "scale-[1.08]" : ""}`}
+            className={`w-full h-full object-cover transition-transform duration-700 block ${hovered && isDesktop ? "scale-[1.1]" : ""}`}
             onError={() => setImgError(true)}
           />
         ) : (
@@ -425,72 +434,28 @@ const GiftRegistry = () => {
   const [claimTarget, setClaimTarget] = useState(null); // item being claimed
 
   // ─── Gift Carousel (mobile) ─────────────────────────────────────────────
-  const giftWrapRef = useRef(null);
   const giftTrackRef = useRef(null);
-  const giftIndexRef = useRef(0);
-  const giftSwipeStartX = useRef(0);
-  const giftSwipeStartY = useRef(0);
-  const giftCurrentTranslate = useRef(0);
-  const giftIsHorizontal = useRef(false);
   const [giftActiveIndex, setGiftActiveIndex] = useState(0);
 
-  const scrollToGiftIndex = (index, animate = true) => {
-    if (!giftTrackRef.current) return;
-    const vw = window.innerWidth;
-    const cardWidth = vw * 0.85 + 16;
-    const offset = index * cardWidth - (vw - vw * 0.85) / 2;
-    const translate = -Math.max(0, offset);
-    giftTrackRef.current.style.transition = animate
-      ? "transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
-      : "none";
-    giftTrackRef.current.style.transform = `translateX(${translate}px)`;
-    giftCurrentTranslate.current = translate;
-    giftIndexRef.current = index;
-    setGiftActiveIndex(index);
-  };
-
-  const handleGiftTouchStart = (e) => {
-    giftSwipeStartX.current = e.changedTouches[0].screenX;
-    giftSwipeStartY.current = e.changedTouches[0].screenY;
-    giftIsHorizontal.current = false;
-    if (giftTrackRef.current) giftTrackRef.current.style.transition = "none";
-  };
-
-  const handleGiftTouchEnd = (e) => {
-    const dx = e.changedTouches[0].screenX - giftSwipeStartX.current;
-    const dy = e.changedTouches[0].screenY - giftSwipeStartY.current;
-    if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 40) {
-      scrollToGiftIndex(giftIndexRef.current);
-      return;
+  const handleGiftScroll = () => {
+    if (giftTrackRef.current) {
+      const scrollLeft = giftTrackRef.current.scrollLeft;
+      const cardWidth = window.innerWidth * 0.85 + 16;
+      const index = Math.round(scrollLeft / cardWidth);
+      if (index !== giftActiveIndex && index >= 0) {
+        setGiftActiveIndex(index);
+      }
     }
-    const total = items.length;
-    const next =
-      dx < 0
-        ? Math.min(giftIndexRef.current + 1, total - 1)
-        : Math.max(giftIndexRef.current - 1, 0);
-    scrollToGiftIndex(next);
   };
 
   useEffect(() => {
-    const el = giftWrapRef.current;
-    if (!el) return;
-    const onMove = (e) => {
-      const touch = e.changedTouches?.[0];
-      if (!touch) return;
-      const dx = touch.screenX - giftSwipeStartX.current;
-      const dy = touch.screenY - giftSwipeStartY.current;
-      if (!giftIsHorizontal.current) {
-        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8)
-          giftIsHorizontal.current = true;
-        else return;
+    if (giftTrackRef.current) {
+      giftTrackRef.current.scrollLeft = 0;
+      if (giftActiveIndex !== 0) {
+        setGiftActiveIndex(0);
       }
-      e.preventDefault();
-      if (giftTrackRef.current) {
-        giftTrackRef.current.style.transform = `translateX(${giftCurrentTranslate.current + dx}px)`;
-      }
-    };
-    el.addEventListener("touchmove", onMove, { passive: false });
-    return () => el.removeEventListener("touchmove", onMove);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length]);
 
   useEffect(() => {
@@ -688,7 +653,10 @@ const GiftRegistry = () => {
               <>
                 {/* Mobile skeleton carousel */}
                 <div className="sm:hidden overflow-hidden">
-                  <div className="flex gap-4" style={{ padding: "0 7.5vw 8px" }}>
+                  <div
+                    className="flex gap-4"
+                    style={{ padding: "0 7.5vw 8px" }}
+                  >
                     {[1, 2, 3].map((i) => (
                       <div
                         key={i}
@@ -729,24 +697,16 @@ const GiftRegistry = () => {
             ) : (
               <>
                 {/* Mobile: swipe carousel */}
-                <div
-                  ref={giftWrapRef}
-                  className="sm:hidden overflow-hidden"
-                  onTouchStart={handleGiftTouchStart}
-                  onTouchEnd={handleGiftTouchEnd}
-                >
+                <div className="sm:hidden overflow-hidden">
                   <div
                     ref={giftTrackRef}
-                    className="flex gap-4 pb-2"
-                    style={{ padding: "0 7.5vw 8px", willChange: "transform" }}
+                    className="gift-track"
+                    onScroll={handleGiftScroll}
+                    style={{ paddingBottom: "60px" }}
                   >
-                    {items.map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex-shrink-0"
-                        style={{ width: "85vw" }}
-                      >
-                        <GiftCard item={item} onClaim={setClaimTarget} />
+                    {items.map((item, idx) => (
+                      <div key={item.id} className="gift-card-wrapper items-start">
+                        <GiftCard item={item} onClaim={setClaimTarget} index={idx} />
                       </div>
                     ))}
                   </div>
@@ -766,12 +726,13 @@ const GiftRegistry = () => {
                 </div>
 
                 {/* Desktop: grid */}
-                <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-3 gap-5">
-                  {items.map((item) => (
+                <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-3 gap-5 lg:gap-8 items-start pt-10">
+                  {items.map((item, idx) => (
                     <GiftCard
                       key={item.id}
                       item={item}
                       onClaim={setClaimTarget}
+                      index={idx}
                     />
                   ))}
                 </div>

@@ -12,10 +12,6 @@ const Journey = () => {
   const [activeIndex, setActiveIndex] = useState(0);
   const [videoFullscreen, setVideoFullscreen] = useState(false);
   const trackRef = useRef(null);
-  const wrapperRef = useRef(null);
-  const mobileIndexRef = useRef(0);
-  const mobileCurrentTranslate = useRef(0);
-  const mobileIsHorizontal = useRef(false);
   const autoAdvanceRef = useRef(null);
   const sectionRef = useRef(null);
   const videoRef = useRef(null);
@@ -88,89 +84,27 @@ const Journey = () => {
     }
   };
 
-  // ─── Mobile JS Carousel ───────────────────────────────────────────────────
-  const mobileSwipeStartX = useRef(0);
-  const mobileSwipeStartY = useRef(0);
-  const isSwiping = useRef(false);
-
-  const getMobileTotal = () => {
-    const base = journeyData.length;
-    return videoCardExists ? base + 1 : base;
-  };
-
-  const scrollToMobileIndex = (index, animate = true) => {
-    if (!trackRef.current || window.innerWidth >= 768) return;
-    const cardWidth = window.innerWidth * 0.85 + 16;
-    const offset = index * cardWidth - (window.innerWidth - window.innerWidth * 0.85) / 2;
-    const translate = -Math.max(0, offset);
-    if (animate) {
-      trackRef.current.style.transition = "transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94)";
-    } else {
-      trackRef.current.style.transition = "none";
-    }
-    trackRef.current.style.transform = `translateX(${translate}px)`;
-    mobileCurrentTranslate.current = translate;
-    mobileIndexRef.current = index;
-    setActiveIndex(index);
-  };
-
-  const handleMobileTouchStart = (e) => {
-    if (window.innerWidth >= 768) return;
-    mobileSwipeStartX.current = e.changedTouches[0].screenX;
-    mobileSwipeStartY.current = e.changedTouches[0].screenY;
-    isSwiping.current = false;
-    mobileIsHorizontal.current = false;
-    if (trackRef.current) trackRef.current.style.transition = "none";
-  };
-
-  const handleMobileTouchEnd = (e) => {
-    if (window.innerWidth >= 768) return;
-    const dx = e.changedTouches[0].screenX - mobileSwipeStartX.current;
-    const dy = e.changedTouches[0].screenY - mobileSwipeStartY.current;
-    if (Math.abs(dy) > Math.abs(dx) || Math.abs(dx) < 40) {
-      scrollToMobileIndex(mobileIndexRef.current);
-      return;
-    }
-    const mobileTotal = getMobileTotal();
-    let next = mobileIndexRef.current;
-    if (dx < 0) next = (next + 1) % mobileTotal;
-    else next = (next - 1 + mobileTotal) % mobileTotal;
-    scrollToMobileIndex(next);
-  };
-
-  // Live drag feedback for mobile carousel
-  useEffect(() => {
-    const el = wrapperRef.current;
-    if (!el) return;
-    const onMove = (e) => {
-      if (window.innerWidth >= 768) return;
-      const touch = e.changedTouches?.[0];
-      if (!touch) return;
-      const dx = touch.screenX - mobileSwipeStartX.current;
-      const dy = touch.screenY - mobileSwipeStartY.current;
-      if (!mobileIsHorizontal.current) {
-        if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 8)
-          mobileIsHorizontal.current = true;
-        else return;
+  // ─── Sync mobile scroll with active dots ─────────────────────────────────
+  const handleScroll = () => {
+    if (window.innerWidth < 768 && trackRef.current) {
+      const scrollLeft = trackRef.current.scrollLeft;
+      const cardWidth = window.innerWidth * 0.85 + 16; // 85vw + 16px gap
+      const index = Math.round(scrollLeft / cardWidth);
+      if (index !== activeIndex && index >= 0) {
+        setActiveIndex(index);
       }
-      e.preventDefault();
-      if (trackRef.current) {
-        trackRef.current.style.transform = `translateX(${mobileCurrentTranslate.current + dx}px)`;
-      }
-    };
-    el.addEventListener("touchmove", onMove, { passive: false });
-    return () => el.removeEventListener("touchmove", onMove);
-  }, []);
+    }
+  };
 
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth < 768) {
-        scrollToMobileIndex(0, false);
+    // Reset to start on data load/change if needed
+    if (window.innerWidth < 768 && trackRef.current) {
+      trackRef.current.scrollLeft = 0;
+      if (activeIndex !== 0) {
+        setActiveIndex(0);
       }
-    };
-    handleResize();
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journeyData.length, videoCardExists]);
 
   // ─── 3D Card Styles ───────────────────────────────────────────────────────
@@ -329,18 +263,11 @@ const Journey = () => {
 
         {/* 3D Carousel / Mobile Snap */}
         <div
-          ref={wrapperRef}
           className="relative w-full mb-12 journey-wrapper"
           onMouseEnter={() => clearInterval(autoAdvanceRef.current)}
           onMouseLeave={resetAutoAdvance}
-          onTouchStart={(e) => {
-            if (window.innerWidth < 768) handleMobileTouchStart(e);
-            else handleTouchStart(e);
-          }}
-          onTouchEnd={(e) => {
-            if (window.innerWidth < 768) handleMobileTouchEnd(e);
-            else handleTouchEnd(e);
-          }}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           {/* Nav Arrows (Desktop) */}
           <button
@@ -380,6 +307,7 @@ const Journey = () => {
             className="journey-track"
             id="journey-track"
             ref={trackRef}
+            onScroll={handleScroll}
           >
             {/* Video Card — Mobile Only */}
             {videoCardExists && (
@@ -401,10 +329,22 @@ const Journey = () => {
                   <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/60" />
                   {/* Tap to expand hint */}
                   <div className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full">
-                    <svg className="w-3 h-3 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                    <svg
+                      className="w-3 h-3 text-white/70"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"
+                      />
                     </svg>
-                    <span className="text-[10px] text-white/70 font-light">Tap to expand</span>
+                    <span className="text-[10px] text-white/70 font-light">
+                      Tap to expand
+                    </span>
                   </div>
                 </div>
 
@@ -413,13 +353,31 @@ const Journey = () => {
                   <p className="font-sans font-light text-[10px] text-gold tracking-[0.2em] uppercase mb-2.5">
                     Our Story
                   </p>
-                  <svg className="w-16 h-1 mb-2.5" viewBox="0 0 64 4" fill="none">
-                    <line x1="0" y1="2" x2="28" y2="2" stroke="#C9A84C" strokeWidth="0.8" />
+                  <svg
+                    className="w-16 h-1 mb-2.5"
+                    viewBox="0 0 64 4"
+                    fill="none"
+                  >
+                    <line
+                      x1="0"
+                      y1="2"
+                      x2="28"
+                      y2="2"
+                      stroke="#C9A84C"
+                      strokeWidth="0.8"
+                    />
                     <circle cx="32" cy="2" r="2" fill="#C9A84C" />
-                    <line x1="36" y1="2" x2="64" y2="2" stroke="#C9A84C" strokeWidth="0.8" />
+                    <line
+                      x1="36"
+                      y1="2"
+                      x2="64"
+                      y2="2"
+                      stroke="#C9A84C"
+                      strokeWidth="0.8"
+                    />
                   </svg>
                   <h4 className="font-serif italic text-[22px] text-maroon font-normal my-2.5">
-                    {settings?.couple_names || "Benjamin & Lina"}
+                    {settings?.couple_names || "Benjamin & Angelin"}
                   </h4>
                   <p className="font-sans font-light text-[12px] text-charcoal/70 leading-[1.8] italic">
                     {settings?.couple_quote || "A love story worth telling"}
@@ -549,8 +507,18 @@ const Journey = () => {
             onClick={() => setVideoFullscreen(false)}
             className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center"
           >
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
           {/* Hint text */}

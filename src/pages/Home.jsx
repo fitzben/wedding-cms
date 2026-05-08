@@ -62,12 +62,14 @@ const Home = () => {
     // Lock scroll initially until invitation is opened
     if (!invitationOpened) {
       document.documentElement.style.overflow = "hidden";
+      document.documentElement.style.height = "100dvh";
       document.body.style.overflow = "hidden";
-      document.body.style.height = "100%";
+      document.body.style.height = "100dvh";
       // Ensure we stay at the top while locked, just in case
       window.scrollTo({ top: 0, behavior: "instant" });
     } else {
       document.documentElement.style.overflow = "";
+      document.documentElement.style.height = "";
       document.body.style.overflow = "auto";
       document.body.style.height = "";
     }
@@ -75,6 +77,7 @@ const Home = () => {
     // Cleanup on unmount
     return () => {
       document.documentElement.style.overflow = "";
+      document.documentElement.style.height = "";
       document.body.style.overflow = "";
       document.body.style.height = "";
     };
@@ -129,7 +132,7 @@ const Home = () => {
 
   return (
     <div className="bg-offwhite text-charcoal font-sans antialiased selection:bg-maroon selection:text-offwhite relative overflow-x-hidden min-h-screen">
-      {audioSource && <audio ref={audioRef} src={audioSource} loop />}
+      <audio ref={audioRef} src={audioSource || ""} loop />
       <LoadingScreen isLoading={loading || settingsLoading} />
 
       {/* Inter-Section Transition Overlay */}
@@ -179,21 +182,21 @@ const Home = () => {
               }, 600);
             }, 20);
 
-            if (audioRef.current) {
-              // Set audio source only when opening invitation
-              if (!audioSource) {
-                setAudioSource(
-                  "https://res.cloudinary.com/dpsaoeync/video/upload/v1773335681/Unplanned_Melody_rfgslq.mp3",
-                );
-              }
-
-              // Use a slight delay to ensure source is set before playing
-              setTimeout(() => {
+            // Set audio source only when opening invitation
+            if (!audioSource) {
+              setAudioSource(
+                "https://res.cloudinary.com/dpsaoeync/video/upload/v1773335681/Unplanned_Melody_rfgslq.mp3",
+              );
+            }
+            
+            // Use a slight delay to ensure source is updated and ready
+            setTimeout(() => {
+              if (audioRef.current) {
                 audioRef.current
                   .play()
                   .catch((err) => console.warn("Audio play failed:", err));
-              }, 100);
-            }
+              }
+            }, 200);
           }}
         />
 
