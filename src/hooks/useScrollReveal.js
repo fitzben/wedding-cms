@@ -7,22 +7,21 @@ import { useEffect } from 'react';
  */
 export const useScrollReveal = (deps = []) => {
   useEffect(() => {
-    const observer = new IntersectionObserver((entries, obs) => {
+    const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           entry.target.classList.add('active');
-          obs.unobserve(entry.target);
+          observer.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.15 });
+    }, { threshold: 0.1 });
 
-    const elements = document.querySelectorAll('.obs-hide');
+    const elements = document.querySelectorAll('.obs-hide:not(.active)');
     elements.forEach(el => observer.observe(el));
 
-    // Cleanup observer on unmount or re-render
     return () => {
-      elements.forEach(el => observer.unobserve(el));
       observer.disconnect();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
 };

@@ -152,9 +152,13 @@ export function GuestTable({
                           deleted
                         </span>
                       )}
-                      {!isDeleted && guest.invite_status === "sent" && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-600 border border-emerald-200 shrink-0">
-                          ✓ sent
+                      {!isDeleted && (
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide shrink-0 border ${
+                          guest.invite_status === "sent"
+                            ? "bg-emerald-50 text-emerald-600 border-emerald-200"
+                            : "bg-gray-50 text-gray-400 border-gray-200"
+                        }`}>
+                          {guest.invite_status === "sent" ? "✓ sent" : "pending"}
                         </span>
                       )}
                     </div>
@@ -327,8 +331,8 @@ export function GuestTable({
                             }
                             className={`p-1.5 rounded-lg transition-all ${
                               guest.invite_status === "sent"
-                                ? "hover:bg-amber-50 text-emerald-500 hover:text-amber-500"
-                                : "hover:bg-emerald-50 text-gray-400 hover:text-emerald-600"
+                                ? "bg-emerald-50 text-emerald-500 hover:bg-amber-50 hover:text-amber-500"
+                                : "hover:bg-emerald-50 text-gray-300 hover:text-emerald-600"
                             }`}
                           >
                             <svg

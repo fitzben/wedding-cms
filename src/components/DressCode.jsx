@@ -62,14 +62,14 @@ function inject() {
 // ─── Swatch ───────────────────────────────────────────────────────────────────
 function Swatch({ color, index }) {
   // Luminance check for text contrast
-  const isLight = (() => {
-    const hex = (color.hex || "#888").replace("#", "");
-    if (hex.length < 6) return true;
-    const r = parseInt(hex.slice(0, 2), 16);
-    const g = parseInt(hex.slice(2, 4), 16);
-    const b = parseInt(hex.slice(4, 6), 16);
-    return (r * 299 + g * 587 + b * 114) / 1000 > 155;
-  })();
+  // const isLight = (() => {
+  //   const hex = (color.hex || "#888").replace("#", "");
+  //   if (hex.length < 6) return true;
+  //   const r = parseInt(hex.slice(0, 2), 16);
+  //   const g = parseInt(hex.slice(2, 4), 16);
+  //   const b = parseInt(hex.slice(4, 6), 16);
+  //   return (r * 299 + g * 587 + b * 114) / 1000 > 155;
+  // })();
 
   return (
     <div
@@ -154,9 +154,12 @@ const DressCode = ({ settings }) => {
   let colors = [];
   try {
     colors = JSON.parse(dress_code_colors || "[]");
-  } catch {}
+  } catch {
+    /* empty */
+  }
 
   // IntersectionObserver for entrance
+  // eslint-disable-next-line react-hooks/rules-of-hooks
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -283,12 +286,12 @@ const DressCode = ({ settings }) => {
           </div>
         )}
         {/* ── Footer Message ── */}
-        <div className="dc-note mt-20 md:mt-32 text-center">
+        {/* <div className="dc-note mt-20 md:mt-32 text-center">
           <div className="w-12 h-[1px] bg-gold/20 mx-auto mb-6" />
           <p className="font-serif italic text-maroon/40 text-xs md:text-sm tracking-widest leading-relaxed">
             Your presence in spirit is our greatest blessing
           </p>
-        </div>
+        </div> */}
       </div>
     </section>
   );

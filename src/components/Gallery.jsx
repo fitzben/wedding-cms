@@ -279,17 +279,28 @@ const Gallery = () => {
   const isHoveredRef = useRef(false);
   const isAnimatingRef = useRef(false);
 
-  useScrollReveal([media, loading, expandStep, currentIndex]);
+  useScrollReveal([media, loading, expandStep]);
 
   // Mobile: 2 → 4 → carousel; Desktop: 3 → 6 → carousel
-  const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false,
+  );
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
   const initialItems = isMobile ? 2 : 3;
   const expandedItems = isMobile ? 4 : 6;
   const canExpand = media.length > initialItems;
   const canCarousel = media.length > expandedItems;
 
   // Keep isAnimatingRef in sync to avoid stale closure in interval
-  useEffect(() => { isAnimatingRef.current = isAnimating; }, [isAnimating]);
+  useEffect(() => {
+    isAnimatingRef.current = isAnimating;
+  }, [isAnimating]);
 
   // Auto-advance: only when expanded + carousel has more items than shown
   useEffect(() => {
@@ -297,20 +308,21 @@ const Gallery = () => {
       clearInterval(autoAdvanceRef.current);
       return;
     }
+    const step = expandedItems;
     autoAdvanceRef.current = setInterval(() => {
       if (isHoveredRef.current || isAnimatingRef.current) return;
       setIsAnimating(true);
       setTimeout(() => {
-        setCurrentIndex((prev) => (prev + expandedItems) % media.length);
+        setCurrentIndex((prev) => (prev + step) % media.length);
         setIsAnimating(false);
-      }, 300);
-    }, 4000);
+      }, 400); // Slightly longer for smoother fade
+    }, 5000); // 5s interval for better reading time
     return () => clearInterval(autoAdvanceRef.current);
-  }, [expandStep, canCarousel, lightbox.open, media.length, expandedItems]);
+  }, [expandStep, canCarousel, lightbox.open, media.length, initialItems, expandedItems]);
 
   useEffect(() => {
     if (!isSectionInView) return;
-    
+
     const loadGallery = async () => {
       try {
         const sections = await getGallerySections();
@@ -329,12 +341,9 @@ const Gallery = () => {
     loadGallery();
   }, [isSectionInView]);
 
-  // Calculate how many items to show based on expandStep
   const visibleMedia = [];
   const itemsToShow = expandStep === 0 ? initialItems : expandedItems;
-  const showPagination =
-    (expandStep === 0 && canExpand) ||
-    (isMobile && expandStep >= 1 && canCarousel);
+  const showPagination = expandStep === 0 && canExpand;
 
   if (media.length > 0) {
     const numItems = Math.min(itemsToShow, media.length);
@@ -406,8 +415,12 @@ const Gallery = () => {
       ref={sectionRef}
       id="section-gallery"
       className="pb-[100px] bg-offwhite relative"
-      onMouseEnter={() => { isHoveredRef.current = true; }}
-      onMouseLeave={() => { isHoveredRef.current = false; }}
+      onMouseEnter={() => {
+        isHoveredRef.current = true;
+      }}
+      onMouseLeave={() => {
+        isHoveredRef.current = false;
+      }}
     >
       {/* Lightbox */}
       {lightbox.open && (
@@ -430,7 +443,9 @@ const Gallery = () => {
         <div
           className="relative transition-all duration-700 ease-in-out"
           style={{
-            minHeight: hasExpandedOnce ? "var(--gallery-expanded-min-h, 645px)" : "0px",
+            minHeight: hasExpandedOnce
+              ? "var(--gallery-expanded-min-h, 645px)"
+              : "0px",
             maxHeight: hasExpandedOnce
               ? "none"
               : "var(--gallery-initial-max-h, 420px)",
@@ -447,10 +462,9 @@ const Gallery = () => {
             </div>
           ) : media.length > 0 ? (
             <div
-              className={`transition-all duration-300 ease-in-out ${isAnimating ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
+              className={`transition-all duration-500 ease-in-out ${isAnimating ? "opacity-0 translate-y-2" : "opacity-100 translate-y-0"}`}
             >
               <Masonry
-                key={currentIndex}
                 breakpointCols={breakpointCols}
                 className="gallery-masonry-grid"
                 columnClassName="gallery-masonry-column"
@@ -519,15 +533,15 @@ const Gallery = () => {
             </div>
           )}
 
-          {/* Desktop carousel arrows (no "Previous/Next Moments" buttons). */}
-          {!isMobile && canCarousel && expandStep >= 1 && (
+          {/* Carousel arrows — desktop and mobile after expand */}
+          {canCarousel && expandStep >= 1 && (
             <>
               <button
                 onClick={handlePrev}
                 type="button"
                 disabled={isAnimating}
                 aria-label="Previous moments"
-                className="absolute top-1/2 -translate-y-1/2 left-2 md:left-8 z-20 w-11 h-11 rounded-full flex items-center justify-center border border-maroon/20 bg-offwhite/70 backdrop-blur-sm text-maroon hover:border-maroon/40 transition-all disabled:opacity-50"
+                className="absolute top-1/2 -translate-y-1/2 left-0 md:left-4 z-20 w-11 h-11 rounded-full flex items-center justify-center border border-maroon/20 bg-offwhite/90 backdrop-blur-sm text-maroon hover:border-maroon/40 transition-all disabled:opacity-50 shadow-sm"
               >
                 <svg
                   width="20"
@@ -547,7 +561,7 @@ const Gallery = () => {
                 type="button"
                 disabled={isAnimating}
                 aria-label="Next moments"
-                className="absolute top-1/2 -translate-y-1/2 right-2 md:right-8 z-20 w-11 h-11 rounded-full flex items-center justify-center border border-maroon/20 bg-offwhite/70 backdrop-blur-sm text-maroon hover:border-maroon/40 transition-all disabled:opacity-50"
+                className="absolute top-1/2 -translate-y-1/2 right-0 md:right-4 z-20 w-11 h-11 rounded-full flex items-center justify-center border border-maroon/20 bg-offwhite/90 backdrop-blur-sm text-maroon hover:border-maroon/40 transition-all disabled:opacity-50 shadow-sm"
               >
                 <svg
                   width="20"
@@ -567,74 +581,35 @@ const Gallery = () => {
 
           {/* Gradient Fade Overlay - Always visible at bottom of fixed height container */}
           {media.length > itemsToShow && (
-            <div className="absolute bottom-0 left-0 right-0 h-48 pointer-events-none z-10 bg-gradient-to-t from-offwhite via-offwhite/80 to-transparent" />
+            <div className="absolute bottom-0 left-0 right-0 h-32 pointer-events-none z-10 bg-gradient-to-t from-offwhite via-offwhite/80 to-transparent" />
           )}
         </div>
 
-        {/* Pagination Buttons */}
+        {/* Pagination: View More Moments */}
         {showPagination && (
-          <div className="flex justify-center items-center gap-4 mt-4 pb-6 obs-hide obs-up">
-            {/* Desktop: only show the expansion CTA. Carousel is driven by arrows above. */}
-            {expandStep === 0 && (
-              <button
-                onClick={handleNext}
-                type="button"
-                disabled={isAnimating || !canExpand}
-                className="group relative px-10 py-4 border border-maroon/20 rounded-full overflow-hidden transition-all duration-500 hover:border-maroon/40 disabled:opacity-50 disabled:hidden"
-              >
-                <div className="absolute inset-0 bg-maroon opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500" />
-                <span className="relative z-10 font-serif italic text-maroon text-lg tracking-wide flex items-center gap-3">
-                  View More Moments
-                  <svg
-                    className="w-4 h-4"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M7 13l5 5 5-5M7 6l5 5 5-5" />
-                  </svg>
-                </span>
-              </button>
-            )}
-
-            {/* Mobile: keep Next/Previous controls for the carousel rotation. */}
-            {isMobile && expandStep >= 1 && canCarousel && (
-              <>
-                <button
-                  onClick={handlePrev}
-                  type="button"
-                  disabled={isAnimating}
-                  className="px-6 py-3 border border-maroon/20 rounded-full text-maroon font-serif italic hover:border-maroon/40 transition-all text-sm disabled:opacity-50"
+          <div className="flex justify-center items-center mt-6 pb-4">
+            <button
+              onClick={handleNext}
+              type="button"
+              disabled={isAnimating || !canExpand}
+              className="group relative px-10 py-4 border border-maroon/20 rounded-full overflow-hidden transition-all duration-500 hover:border-maroon/40 disabled:opacity-50"
+            >
+              <div className="absolute inset-0 bg-maroon opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500" />
+              <span className="relative z-10 font-serif italic text-maroon text-lg tracking-wide flex items-center gap-3">
+                View More Moments
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  Previous
-                </button>
-                <button
-                  onClick={handleNext}
-                  type="button"
-                  disabled={isAnimating || !canCarousel}
-                  className="group relative px-10 py-4 border border-maroon/20 rounded-full overflow-hidden transition-all duration-500 hover:border-maroon/40 disabled:opacity-50"
-                >
-                  <div className="absolute inset-0 bg-maroon opacity-0 group-hover:opacity-[0.03] transition-opacity duration-500" />
-                  <span className="relative z-10 font-serif italic text-maroon text-lg tracking-wide flex items-center gap-3">
-                    Next Moments
-                    <svg
-                      className="w-4 h-4"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M5 12h14m-6-6l6 6-6 6" />
-                    </svg>
-                  </span>
-                </button>
-              </>
-            )}
+                  <path d="M7 13l5 5 5-5M7 6l5 5 5-5" />
+                </svg>
+              </span>
+            </button>
           </div>
         )}
       </div>
