@@ -88,23 +88,22 @@ const Journey = () => {
   const handleScroll = () => {
     if (window.innerWidth < 768 && trackRef.current) {
       const scrollLeft = trackRef.current.scrollLeft;
-      const cardWidth = window.innerWidth * 0.85 + 16; // 85vw + 16px gap
+      const cardWidth = window.innerWidth * 0.85 + 16;
       const index = Math.round(scrollLeft / cardWidth);
-      if (index !== activeIndex && index >= 0) {
+      const mobileTotal = videoCardExists
+        ? journeyData.length + 1
+        : journeyData.length;
+      if (index !== activeIndex && index >= 0 && index < mobileTotal) {
         setActiveIndex(index);
       }
     }
   };
 
   useEffect(() => {
-    // Reset to start on data load/change if needed
     if (window.innerWidth < 768 && trackRef.current) {
       trackRef.current.scrollLeft = 0;
-      if (activeIndex !== 0) {
-        setActiveIndex(0);
-      }
+      setActiveIndex(0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [journeyData.length, videoCardExists]);
 
   // ─── 3D Card Styles ───────────────────────────────────────────────────────
@@ -308,6 +307,8 @@ const Journey = () => {
             id="journey-track"
             ref={trackRef}
             onScroll={handleScroll}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
           >
             {/* Video Card — Mobile Only */}
             {videoCardExists && (

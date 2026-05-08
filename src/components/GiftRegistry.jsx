@@ -437,6 +437,53 @@ const GiftRegistry = () => {
   const giftTrackRef = useRef(null);
   const [giftActiveIndex, setGiftActiveIndex] = useState(0);
 
+  // ─── Gift Carousel (desktop) ────────────────────────────────────────────
+  const [giftDesktopIndex, setGiftDesktopIndex] = useState(0);
+  const giftDesktopTrackRef = useRef(null);
+
+  const giftNext = () => {
+    setGiftDesktopIndex((prev) => (prev + 1) % items.length);
+  };
+
+  const giftPrev = () => {
+    setGiftDesktopIndex((prev) => (prev - 1 + items.length) % items.length);
+  };
+
+  const getGiftCardStyle = (index) => {
+    let offset = index - giftDesktopIndex;
+    if (offset > items.length / 2) offset -= items.length;
+    if (offset < -items.length / 2) offset += items.length;
+
+    if (offset === 0) {
+      return {
+        transform: "translateX(0px) translateZ(0px) scale(1) translateY(0px)",
+        opacity: 1,
+        zIndex: 10,
+        boxShadow: "0 30px 60px -10px rgba(61,5,16,0.25)",
+        filter: "blur(0px)",
+      };
+    } else if (offset === 1 || offset === -1) {
+      const x = offset === 1 ? 310 : -310;
+      const y = 40;
+      return {
+        transform: `translateX(${x}px) scale(0.82) translateY(${y}px)`,
+        opacity: 0.65,
+        zIndex: 5,
+        boxShadow: "0 10px 30px -10px rgba(61,5,16,0.1)",
+        filter: "blur(0.5px)",
+      };
+    } else {
+      const x = offset > 0 ? 560 : -560;
+      return {
+        transform: `translateX(${x}px) scale(0.65) translateY(60px)`,
+        opacity: 0.2,
+        zIndex: 1,
+        boxShadow: "none",
+        filter: "blur(1.5px)",
+      };
+    }
+  };
+
   const handleGiftScroll = () => {
     if (giftTrackRef.current) {
       const scrollLeft = giftTrackRef.current.scrollLeft;
@@ -650,53 +697,29 @@ const GiftRegistry = () => {
             </h3>
 
             {loadingItems ? (
-              <>
-                {/* Mobile skeleton carousel */}
-                <div className="sm:hidden overflow-hidden">
+              <div className="flex gap-4 overflow-hidden px-[7.5vw]">
+                {[1, 2, 3].map((i) => (
                   <div
-                    className="flex gap-4"
-                    style={{ padding: "0 7.5vw 8px" }}
+                    key={i}
+                    className="flex-shrink-0 rounded border border-gold/10 overflow-hidden animate-pulse"
+                    style={{ width: "85vw", maxWidth: "300px" }}
                   >
-                    {[1, 2, 3].map((i) => (
-                      <div
-                        key={i}
-                        className="flex-shrink-0 rounded border border-gold/10 overflow-hidden animate-pulse"
-                        style={{ width: "85vw" }}
-                      >
-                        <div className="h-[180px] bg-gold/5" />
-                        <div className="p-5 space-y-2">
-                          <div className="h-3 bg-gold/10 rounded w-1/3" />
-                          <div className="h-6 bg-gold/10 rounded w-3/4" />
-                          <div className="h-2 bg-gold/10 rounded w-full" />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                {/* Desktop skeleton grid */}
-                <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-3 gap-5">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="rounded border border-gold/10 overflow-hidden animate-pulse"
-                    >
-                      <div className="h-[180px] bg-gold/5" />
-                      <div className="p-5 space-y-2">
-                        <div className="h-3 bg-gold/10 rounded w-1/3" />
-                        <div className="h-6 bg-gold/10 rounded w-3/4" />
-                        <div className="h-2 bg-gold/10 rounded w-full" />
-                      </div>
+                    <div className="h-[180px] bg-gold/5" />
+                    <div className="p-5 space-y-2">
+                      <div className="h-3 bg-gold/10 rounded w-1/3" />
+                      <div className="h-6 bg-gold/10 rounded w-3/4" />
+                      <div className="h-2 bg-gold/10 rounded w-full" />
                     </div>
-                  ))}
-                </div>
-              </>
+                  </div>
+                ))}
+              </div>
             ) : items.length === 0 ? (
               <p className="text-center font-sans font-light text-[13px] text-charcoal/40 italic py-12">
                 Gift registry belum tersedia.
               </p>
             ) : (
               <>
-                {/* Mobile: swipe carousel */}
+                {/* ── Mobile Carousel (scroll snap) ── */}
                 <div className="sm:hidden overflow-hidden">
                   <div
                     ref={giftTrackRef}
@@ -705,36 +728,89 @@ const GiftRegistry = () => {
                     style={{ paddingBottom: "60px" }}
                   >
                     {items.map((item, idx) => (
-                      <div key={item.id} className="gift-card-wrapper items-start">
+                      <div key={item.id} className="gift-card-wrapper">
                         <GiftCard item={item} onClaim={setClaimTarget} index={idx} />
                       </div>
                     ))}
                   </div>
-                  {/* Dot indicators */}
-                  <div className="flex justify-center gap-2 mt-4">
+                  {/* Dots */}
+                  <div className="flex justify-center gap-2 mt-2">
                     {items.map((_, i) => (
                       <div
                         key={i}
                         className={`h-1 rounded-full transition-all duration-500 ${
-                          giftActiveIndex === i
-                            ? "w-10 bg-gold"
-                            : "w-2.5 bg-gold/30"
+                          giftActiveIndex === i ? "w-10 bg-gold" : "w-2.5 bg-gold/30"
                         }`}
                       />
                     ))}
                   </div>
                 </div>
 
-                {/* Desktop: grid */}
-                <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-3 gap-5 lg:gap-8 items-start pt-10">
-                  {items.map((item, idx) => (
-                    <GiftCard
-                      key={item.id}
-                      item={item}
-                      onClaim={setClaimTarget}
-                      index={idx}
-                    />
-                  ))}
+                {/* ── Desktop 3D Carousel ── */}
+                <div className="hidden sm:block">
+                  <div
+                    className="relative w-full"
+                    style={{ minHeight: "520px", perspective: "1000px" }}
+                  >
+                    {/* Nav Arrows */}
+                    <button
+                      onClick={giftPrev}
+                      className="absolute top-[calc(50%-80px)] left-6 w-11 h-11 rounded-full border border-maroon/30 text-maroon flex items-center justify-center hover:bg-maroon/5 transition-all z-20 backdrop-blur-sm"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={giftNext}
+                      className="absolute top-[calc(50%-80px)] right-6 w-11 h-11 rounded-full border border-maroon/30 text-maroon flex items-center justify-center hover:bg-maroon/5 transition-all z-20 backdrop-blur-sm"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+
+                    {/* Cards */}
+                    <div
+                      ref={giftDesktopTrackRef}
+                      className="relative w-full"
+                      style={{ minHeight: "480px", transformStyle: "preserve-3d" }}
+                    >
+                      {items.map((item, index) => (
+                        <div
+                          key={item.id}
+                          onClick={() => setGiftDesktopIndex(index)}
+                          style={{
+                            position: "absolute",
+                            width: "280px",
+                            left: "50%",
+                            top: "0",
+                            marginLeft: "-140px",
+                            borderRadius: "8px",
+                            overflow: "hidden",
+                            cursor: "pointer",
+                            transition: "all 0.6s cubic-bezier(0.25,0.46,0.45,0.94)",
+                            ...getGiftCardStyle(index),
+                          }}
+                        >
+                          <GiftCard item={item} onClaim={setClaimTarget} index={index} />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Dots */}
+                    <div className="flex justify-center gap-2 mt-4 pb-4">
+                      {items.map((_, i) => (
+                        <div
+                          key={i}
+                          onClick={() => setGiftDesktopIndex(i)}
+                          className={`h-1 rounded-full transition-all duration-500 cursor-pointer ${
+                            giftDesktopIndex === i ? "w-10 bg-gold" : "w-2.5 bg-gold/30"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </>
             )}

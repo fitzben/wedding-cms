@@ -573,7 +573,7 @@ const Gallery = () => {
 
         {/* Pagination Buttons */}
         {showPagination && (
-          <div className="flex justify-center items-center gap-4 mt-8 pb-12 obs-hide obs-up">
+          <div className="flex justify-center items-center gap-4 mt-4 pb-6 obs-hide obs-up">
             {/* Desktop: only show the expansion CTA. Carousel is driven by arrows above. */}
             {expandStep === 0 && (
               <button
@@ -642,12 +642,12 @@ const Gallery = () => {
       <style>{`
         /* Responsive initial max-height (clips at 2 items mobile, 3 items desktop) */
         :root {
-          --gallery-initial-max-h: 340px;
+          --gallery-initial-max-h: 320px;
           --gallery-expanded-max-h: 1100px;
         }
         @media (min-width: 768px) {
           :root {
-            --gallery-initial-max-h: 420px;
+            --gallery-initial-max-h: 400px;
             --gallery-expanded-min-h: 700px;
           }
         }
