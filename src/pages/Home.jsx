@@ -83,6 +83,28 @@ const Home = () => {
     };
   }, [invitationOpened]);
 
+  useEffect(() => {
+    const handleVideoOpen = () => {
+      if (audioRef.current && !audioRef.current.paused) {
+        audioRef.current.pause();
+      }
+    };
+
+    const handleVideoClose = () => {
+      if (audioRef.current) {
+        audioRef.current.play().catch(() => {});
+      }
+    };
+
+    window.addEventListener("journey-video-open", handleVideoOpen);
+    window.addEventListener("journey-video-close", handleVideoClose);
+
+    return () => {
+      window.removeEventListener("journey-video-open", handleVideoOpen);
+      window.removeEventListener("journey-video-close", handleVideoClose);
+    };
+  }, [audioRef]);
+
   // Handle Security: Not Found / Not Invited
   if (!loading && !settingsLoading && notFound) {
     return (
