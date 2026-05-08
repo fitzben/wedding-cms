@@ -193,7 +193,6 @@ const Journey = () => {
           <div className="hidden md:block absolute inset-0 w-full h-full">
             <video
               ref={videoRef}
-              key={bgUrl}
               autoPlay
               muted
               loop
