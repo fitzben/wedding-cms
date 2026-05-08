@@ -59,7 +59,13 @@ const Hero = ({ guestName, onOpenInvitation }) => {
 
   const groomName = settings?.groom_nickname;
   const brideName = settings?.bride_nickname;
-  const weddingDate = settings?.resepsi_date;
+  const weddingDate = settings?.resepsi_date
+    ? new Date(settings.resepsi_date + "T00:00:00").toLocaleDateString("en-US", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <header
