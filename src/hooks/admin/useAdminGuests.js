@@ -19,6 +19,9 @@ const API = {
       ...(filters.invitation_type
         ? { invitation_type: filters.invitation_type }
         : {}),
+      ...(filters.invite_status
+        ? { invite_status: filters.invite_status }
+        : {}),
     });
     if (filters.created_by) params.set("created_by", filters.created_by);
     const qs = params.toString();
@@ -78,6 +81,7 @@ const EMPTY_FILTERS = {
   importance: "",
   guest_group_id: "",
   invitation_type: "",
+  invite_status: "",
   created_by: "",
 };
 

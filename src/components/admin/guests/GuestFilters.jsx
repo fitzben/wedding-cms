@@ -40,6 +40,14 @@ export function GuestFilters({
                 { v: "both", l: "📱✉️ Keduanya" },
               ],
             },
+            {
+              label: "Status Undangan",
+              key: "invite_status",
+              custom: [
+                { v: "pending", l: "⏳ Pending" },
+                { v: "sent", l: "✓ Terkirim" },
+              ],
+            },
           ].map(({ label, key, opts, upper, custom }) => (
             <div key={key} className="flex flex-col gap-1">
               <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
@@ -215,6 +223,22 @@ export function GuestFilters({
               <option value="digital">📱 Digital</option>
               <option value="physical">✉️ Fisik</option>
               <option value="both">📱✉️ Keduanya</option>
+            </select>
+          </div>
+
+          {/* Invite Status */}
+          <div className="flex flex-col gap-1">
+            <label className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+              Status Undangan
+            </label>
+            <select
+              value={filters.invite_status}
+              onChange={(e) => setFilter("invite_status", e.target.value)}
+              className="px-3 py-2 rounded-xl border border-gray-200 text-sm bg-white focus:border-gray-400 outline-none transition-all"
+            >
+              <option value="">Semua</option>
+              <option value="pending">⏳ Pending</option>
+              <option value="sent">✓ Terkirim</option>
             </select>
           </div>
 
