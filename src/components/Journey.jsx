@@ -15,6 +15,7 @@ const Journey = () => {
   const autoAdvanceRef = useRef(null);
   const sectionRef = useRef(null);
   const videoRef = useRef(null);
+  const fullscreenVideoRef = useRef(null);
   const isSectionInView = useInView(sectionRef, { amount: 0.1 });
 
   // Ensure items are sorted by sort_order from BE
@@ -316,7 +317,7 @@ const Journey = () => {
                 <div
                   className="relative w-full overflow-hidden bg-black cursor-pointer"
                   style={{ aspectRatio: "16/9" }}
-                  onClick={() => setVideoFullscreen(true)}
+                  onClick={() => { setVideoFullscreen(true); window.dispatchEvent(new CustomEvent("journey-video-open")); }}
                 >
                   <video
                     autoPlay
@@ -491,11 +492,11 @@ const Journey = () => {
       {videoFullscreen && (
         <div
           className="fixed inset-0 z-[200] bg-black flex items-center justify-center md:hidden"
-          onClick={() => setVideoFullscreen(false)}
+          onClick={() => { setVideoFullscreen(false); window.dispatchEvent(new CustomEvent("journey-video-close")); }}
         >
           <video
+            ref={fullscreenVideoRef}
             autoPlay
-            muted
             loop
             playsInline
             controls
@@ -504,7 +505,7 @@ const Journey = () => {
           />
           {/* Close button */}
           <button
-            onClick={() => setVideoFullscreen(false)}
+            onClick={() => { setVideoFullscreen(false); window.dispatchEvent(new CustomEvent("journey-video-close")); }}
             className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center"
           >
             <svg
