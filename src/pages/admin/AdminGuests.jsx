@@ -75,7 +75,6 @@ export const AdminGuests = () => {
 
   const handleDownloadTemplate = () => {
     import("xlsx").then((XLSX) => {
-      // ── Sheet 1: Template Input ──────────────────────────────────────────
       const templateHeaders = [
         "first_name", "last_name", "display_name", "phone_number",
         "pax_allowed", "category", "priority", "importance",
@@ -94,7 +93,20 @@ export const AdminGuests = () => {
           importance: "normal",
           invitation_type: "digital",
           guest_group_name: groups[0]?.name || "",
-          notes: "Contoh catatan — hapus baris ini",
+          notes: "Contoh dengan nomor HP — bisa di-WA blast",
+        },
+        {
+          first_name: "Jane",
+          last_name: "Smith",
+          display_name: "Jane Smith",
+          phone_number: "",
+          pax_allowed: 1,
+          category: "friend",
+          priority: "medium",
+          importance: "normal",
+          invitation_type: "digital",
+          guest_group_name: "",
+          notes: "Contoh tanpa nomor HP — share via IG/link",
         },
       ];
 
@@ -103,61 +115,45 @@ export const AdminGuests = () => {
       });
 
       sheet1["!cols"] = [
-        { wch: 15 }, // first_name
-        { wch: 15 }, // last_name
-        { wch: 25 }, // display_name
-        { wch: 18 }, // phone_number
-        { wch: 10 }, // pax_allowed
-        { wch: 12 }, // category
-        { wch: 10 }, // priority
-        { wch: 12 }, // importance
-        { wch: 16 }, // invitation_type
-        { wch: 25 }, // guest_group_name
-        { wch: 30 }, // notes
+        { wch: 15 }, { wch: 15 }, { wch: 25 }, { wch: 18 },
+        { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 12 },
+        { wch: 16 }, { wch: 25 }, { wch: 35 },
       ];
 
-      // ── Sheet 2: Referensi Master Data ───────────────────────────────────
+      // Sheet 2: Referensi
       const refData = [];
-
-      refData.push({ Tipe: "category", "Nilai Valid": "friend" });
-      refData.push({ Tipe: "", "Nilai Valid": "colleague" });
-      refData.push({ Tipe: "", "Nilai Valid": "family" });
-      refData.push({ Tipe: "", "Nilai Valid": "" });
-
-      refData.push({ Tipe: "priority", "Nilai Valid": "low" });
-      refData.push({ Tipe: "", "Nilai Valid": "medium" });
-      refData.push({ Tipe: "", "Nilai Valid": "high" });
-      refData.push({ Tipe: "", "Nilai Valid": "" });
-
-      refData.push({ Tipe: "importance", "Nilai Valid": "normal" });
-      refData.push({ Tipe: "", "Nilai Valid": "vip" });
-      refData.push({ Tipe: "", "Nilai Valid": "vvip" });
-      refData.push({ Tipe: "", "Nilai Valid": "" });
-
-      refData.push({ Tipe: "invitation_type", "Nilai Valid": "digital" });
-      refData.push({ Tipe: "", "Nilai Valid": "physical" });
-      refData.push({ Tipe: "", "Nilai Valid": "both" });
-      refData.push({ Tipe: "", "Nilai Valid": "" });
+      refData.push({ Kolom: "first_name", Keterangan: "WAJIB — nama depan" });
+      refData.push({ Kolom: "last_name", Keterangan: "WAJIB — nama belakang" });
+      refData.push({ Kolom: "display_name", Keterangan: "Opsional — nama yang tampil di undangan" });
+      refData.push({ Kolom: "phone_number", Keterangan: "Opsional — format 628xxx. Kosongkan jika tidak ada" });
+      refData.push({ Kolom: "", Keterangan: "" });
+      refData.push({ Kolom: "category", Keterangan: "friend / colleague / family (default: friend)" });
+      refData.push({ Kolom: "priority", Keterangan: "low / medium / high (default: medium)" });
+      refData.push({ Kolom: "importance", Keterangan: "normal / vip / vvip (default: normal)" });
+      refData.push({ Kolom: "invitation_type", Keterangan: "digital / physical / both (default: digital)" });
+      refData.push({ Kolom: "", Keterangan: "" });
 
       const sheet2 = XLSX.utils.json_to_sheet(refData, {
-        header: ["Tipe", "Nilai Valid"],
+        header: ["Kolom", "Keterangan"],
       });
 
-      const groupStartRow = refData.length + 3;
+      // Tambah tabel guest groups
+      const groupStartRow = refData.length + 2;
       XLSX.utils.sheet_add_aoa(sheet2, [
         ["guest_group_name — Pilih salah satu:"],
         ...(groups.length > 0
           ? groups.map(g => [g.name])
           : [["(belum ada grup — buat dulu di menu Groups)"]]
         ),
+        [""],
+        ["Kosongkan jika tamu tidak masuk grup manapun"],
       ], { origin: { r: groupStartRow, c: 0 } });
 
-      sheet2["!cols"] = [{ wch: 20 }, { wch: 30 }];
+      sheet2["!cols"] = [{ wch: 20 }, { wch: 45 }];
 
-      // ── Build Workbook ───────────────────────────────────────────────────
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, sheet1, "Template Input");
-      XLSX.utils.book_append_sheet(workbook, sheet2, "Referensi Master Data");
+      XLSX.utils.book_append_sheet(workbook, sheet2, "Referensi");
 
       XLSX.writeFile(workbook, "template_upload_guests.xlsx");
     });
@@ -631,7 +627,7 @@ export const AdminGuests = () => {
                   Import CSV
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".csv,.xlsx,.xls"
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
