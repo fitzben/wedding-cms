@@ -262,7 +262,7 @@ export function TabDressCode({ settings, onChange, onSave, saving }) {
             <Label optional>Catatan untuk Tamu</Label>
             <Textarea
               rows={3}
-              placeholder="e.g. Kami mengharapkan tamu untuk mengenakan warna-warna lembut dan elegan. Hindari warna putih dan hitam pekat."
+              placeholder="e.g. We kindly request our guests to wear colors that are soft and elegant. Please avoid wearing white and deep black."
               {...f("dress_code_notes")}
             />
           </div>

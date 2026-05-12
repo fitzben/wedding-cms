@@ -744,7 +744,7 @@ const Hashtag = ({ isVisible }) => {
               </div>
 
               {/* Total days label */}
-              <p
+              {/* <p
                 style={{
                   marginTop: "1.25rem",
                   fontSize: "10px",
@@ -757,7 +757,7 @@ const Hashtag = ({ isVisible }) => {
                 {timeLeft.days > 0
                   ? `${timeLeft.days} day${timeLeft.days !== 1 ? "s" : ""} to go`
                   : "today is the day"}
-              </p>
+              </p> */}
             </>
           )}
         </div>

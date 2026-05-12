@@ -212,7 +212,7 @@ export default function useAdminGuests() {
   };
 
   const clearFilters = () => {
-    setFilters(EMPTY_FILTERS);
+    setFilters({ ...EMPTY_FILTERS, created_by: currentUserId });
     setPage(1);
   };
 

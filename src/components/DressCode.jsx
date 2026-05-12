@@ -285,13 +285,6 @@ const DressCode = ({ settings }) => {
             </svg>
           </div>
         )}
-        {/* ── Footer Message ── */}
-        {/* <div className="dc-note mt-20 md:mt-32 text-center">
-          <div className="w-12 h-[1px] bg-gold/20 mx-auto mb-6" />
-          <p className="font-serif italic text-maroon/40 text-xs md:text-sm tracking-widest leading-relaxed">
-            Your presence in spirit is our greatest blessing
-          </p>
-        </div> */}
       </div>
     </section>
   );

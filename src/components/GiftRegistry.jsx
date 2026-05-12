@@ -294,13 +294,13 @@ function GiftCard({ item, onClaim, index }) {
 
   // Pattern-based styling
   const isEven = index % 2 === 0;
-  
+
   // Height variations: Even is larger, Odd is smaller
   const imageHeight = isEven ? "h-[220px]" : "h-[180px]";
-  
+
   // Vertical offset for zigzag effect (Odd indices shifted down)
   const verticalShift = isEven ? "translateY(0)" : "translateY(40px)";
-  
+
   return (
     <div
       className="group relative"
@@ -311,7 +311,10 @@ function GiftCard({ item, onClaim, index }) {
         overflow: "hidden",
         transition: "all 0.4s cubic-bezier(0.16,1,0.3,1)",
         transform: `${verticalShift} ${hovered && isDesktop ? "scale(1.02) translateY(-10px)" : ""}`,
-        boxShadow: hovered && isDesktop ? "0 25px 50px -12px rgba(61,5,16,0.15)" : "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
+        boxShadow:
+          hovered && isDesktop
+            ? "0 25px 50px -12px rgba(61,5,16,0.15)"
+            : "0 4px 6px -1px rgba(0, 0, 0, 0.05)",
       }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -344,7 +347,9 @@ function GiftCard({ item, onClaim, index }) {
       )}
 
       {/* Image */}
-      <div className={`${imageHeight} overflow-hidden relative bg-gradient-to-br from-[#3d0510] to-maroon`}>
+      <div
+        className={`${imageHeight} overflow-hidden relative bg-gradient-to-br from-[#3d0510] to-maroon`}
+      >
         {item.image_url && !imgError ? (
           <img
             src={item.image_url}
@@ -543,8 +548,8 @@ const GiftRegistry = () => {
               Wedding Gift
             </h2>
             <p className="font-sans font-light text-[14px] text-charcoal/60 italic max-w-md mx-auto">
-              Your presence is our greatest gift. But if you wish to bless us
-              further:
+              Your love and presence mean the world to us. Yet if you wish to
+              share a little more:
             </p>
           </div>
 
@@ -729,7 +734,11 @@ const GiftRegistry = () => {
                   >
                     {items.map((item, idx) => (
                       <div key={item.id} className="gift-card-wrapper">
-                        <GiftCard item={item} onClaim={setClaimTarget} index={idx} />
+                        <GiftCard
+                          item={item}
+                          onClaim={setClaimTarget}
+                          index={idx}
+                        />
                       </div>
                     ))}
                   </div>
@@ -739,7 +748,9 @@ const GiftRegistry = () => {
                       <div
                         key={i}
                         className={`h-1 rounded-full transition-all duration-500 ${
-                          giftActiveIndex === i ? "w-10 bg-gold" : "w-2.5 bg-gold/30"
+                          giftActiveIndex === i
+                            ? "w-10 bg-gold"
+                            : "w-2.5 bg-gold/30"
                         }`}
                       />
                     ))}
@@ -757,16 +768,36 @@ const GiftRegistry = () => {
                       onClick={giftPrev}
                       className="absolute top-[calc(50%-80px)] left-6 w-11 h-11 rounded-full border border-maroon/30 text-maroon flex items-center justify-center hover:bg-maroon/5 transition-all z-20 backdrop-blur-sm"
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 19l-7-7 7-7" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M15 19l-7-7 7-7"
+                        />
                       </svg>
                     </button>
                     <button
                       onClick={giftNext}
                       className="absolute top-[calc(50%-80px)] right-6 w-11 h-11 rounded-full border border-maroon/30 text-maroon flex items-center justify-center hover:bg-maroon/5 transition-all z-20 backdrop-blur-sm"
                     >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5l7 7-7 7" />
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="1.5"
+                          d="M9 5l7 7-7 7"
+                        />
                       </svg>
                     </button>
 
@@ -774,7 +805,10 @@ const GiftRegistry = () => {
                     <div
                       ref={giftDesktopTrackRef}
                       className="relative w-full"
-                      style={{ minHeight: "480px", transformStyle: "preserve-3d" }}
+                      style={{
+                        minHeight: "480px",
+                        transformStyle: "preserve-3d",
+                      }}
                     >
                       {items.map((item, index) => (
                         <div
@@ -789,11 +823,16 @@ const GiftRegistry = () => {
                             borderRadius: "8px",
                             overflow: "hidden",
                             cursor: "pointer",
-                            transition: "all 0.6s cubic-bezier(0.25,0.46,0.45,0.94)",
+                            transition:
+                              "all 0.6s cubic-bezier(0.25,0.46,0.45,0.94)",
                             ...getGiftCardStyle(index),
                           }}
                         >
-                          <GiftCard item={item} onClaim={setClaimTarget} index={index} />
+                          <GiftCard
+                            item={item}
+                            onClaim={setClaimTarget}
+                            index={index}
+                          />
                         </div>
                       ))}
                     </div>
@@ -805,7 +844,9 @@ const GiftRegistry = () => {
                           key={i}
                           onClick={() => setGiftDesktopIndex(i)}
                           className={`h-1 rounded-full transition-all duration-500 cursor-pointer ${
-                            giftDesktopIndex === i ? "w-10 bg-gold" : "w-2.5 bg-gold/30"
+                            giftDesktopIndex === i
+                              ? "w-10 bg-gold"
+                              : "w-2.5 bg-gold/30"
                           }`}
                         />
                       ))}
