@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 
 const STYLES = `
@@ -138,11 +138,104 @@ function ColorBand({ colors }) {
   );
 }
 
+// ─── Photo grid ───────────────────────────────────────────────────────────────
+function PhotoGrid({ photos, onOpen }) {
+  if (!photos.length) return null;
+  return (
+    <div className="dc-palette">
+      <div
+        className={`grid gap-3 ${
+          photos.length === 1 ? "grid-cols-1 max-w-xs mx-auto" :
+          photos.length === 2 ? "grid-cols-2 max-w-sm mx-auto" :
+          photos.length <= 4 ? "grid-cols-2" :
+          "grid-cols-2 md:grid-cols-3"
+        }`}
+      >
+        {photos.map((photo, i) => (
+          <div
+            key={i}
+            onClick={() => onOpen(i)}
+            className="relative aspect-[3/4] rounded-2xl overflow-hidden cursor-pointer group"
+            style={{ animationDelay: `${0.8 + i * 0.1}s` }}
+          >
+            <img
+              src={photo.public_url}
+              alt={`Dress code reference ${i + 1}`}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-end justify-center pb-4">
+              <span className="opacity-0 group-hover:opacity-100 transition-all duration-300 text-white text-xs font-light tracking-widest uppercase bg-black/30 backdrop-blur-sm px-3 py-1 rounded-full">
+                View
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Lightbox ─────────────────────────────────────────────────────────────────
+function PhotoLightbox({ photos, index, onClose, onPrev, onNext }) {
+  if (index === null || !photos[index]) return null;
+  return (
+    <div
+      className="fixed inset-0 z-[200] bg-black/95 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <button
+        className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+        onClick={onClose}
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      {photos.length > 1 && (
+        <button
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+          onClick={(e) => { e.stopPropagation(); onPrev(); }}
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+      )}
+
+      <img
+        src={photos[index].public_url}
+        alt={`Dress code ${index + 1}`}
+        className="max-h-[90vh] max-w-[90vw] object-contain rounded-xl"
+        onClick={(e) => e.stopPropagation()}
+      />
+
+      {photos.length > 1 && (
+        <button
+          className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 flex items-center justify-center text-white hover:bg-white/20 transition-all"
+          onClick={(e) => { e.stopPropagation(); onNext(); }}
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      )}
+
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-white/50 text-xs tracking-widest">
+        {index + 1} / {photos.length}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────────
 const DressCode = ({ settings }) => {
   const sectionRef = useRef(null);
   const { dress_code_colors, dress_code_theme, dress_code_notes } =
     settings || {};
+
+  const [lightboxIndex, setLightboxIndex] = useState(null);
 
   useEffect(() => {
     inject();
@@ -157,6 +250,11 @@ const DressCode = ({ settings }) => {
   } catch {
     /* empty */
   }
+
+  let photos = [];
+  try {
+    photos = JSON.parse(settings?.dress_code_photos || "[]");
+  } catch { /* empty */ }
 
   // IntersectionObserver for entrance
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -253,6 +351,19 @@ const DressCode = ({ settings }) => {
           </div>
         )}
 
+        {/* ── Foto Referensi ── */}
+        {photos.length > 0 && (
+          <div className="dc-palette mb-16 md:mb-24">
+            <p className="font-sans text-[9px] text-gold tracking-[0.25em] uppercase text-center mb-8 opacity-60">
+              Referensi Pakaian
+            </p>
+            <PhotoGrid
+              photos={photos}
+              onOpen={(i) => setLightboxIndex(i)}
+            />
+          </div>
+        )}
+
         {/* ── Notes — quote-style ── */}
         {dress_code_notes && (
           <div className="dc-note max-w-lg mx-auto text-center relative">
@@ -286,6 +397,14 @@ const DressCode = ({ settings }) => {
           </div>
         )}
       </div>
+
+      <PhotoLightbox
+        photos={photos}
+        index={lightboxIndex}
+        onClose={() => setLightboxIndex(null)}
+        onPrev={() => setLightboxIndex((i) => (i - 1 + photos.length) % photos.length)}
+        onNext={() => setLightboxIndex((i) => (i + 1) % photos.length)}
+      />
     </section>
   );
 };
