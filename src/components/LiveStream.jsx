@@ -95,12 +95,12 @@ function fmtDate(str) {
   if (!str) return "";
   try {
     return (
-      new Intl.DateTimeFormat("id-ID", {
+      new Intl.DateTimeFormat("en-US", {
         weekday: "long",
         day: "numeric",
         month: "long",
         year: "numeric",
-        hour: "2-digit",
+        hour: "numeric",
         minute: "2-digit",
       }).format(new Date(str)) + " WIB"
     );
@@ -276,6 +276,22 @@ const LiveStream = ({ settings }) => {
           {stream_label || "Live Streaming"}
         </motion.h2>
 
+        {/* Footer note */}
+        <motion.p
+          variants={item}
+          style={{
+            textAlign: "center",
+            marginBottom: "4rem",
+            fontSize: 14,
+            letterSpacing: "0.2em",
+            color: "rgba(255,255,255,0.55)",
+            fontFamily: "Georgia, serif",
+            fontStyle: "italic",
+          }}
+        >
+          Your presence in spirit is our greatest blessing
+        </motion.p>
+
         {/* Gold divider */}
         <motion.div
           variants={item}
@@ -306,46 +322,6 @@ const LiveStream = ({ settings }) => {
             }}
           />
         </motion.div>
-
-        {/* ── Countdown (only when upcoming) ── */}
-        {/* {status === "upcoming" && countdown && (
-          <motion.div variants={item} className="mb-14">
-            <p
-              style={{
-                textAlign: "center",
-                fontSize: 9,
-                letterSpacing: "0.3em",
-                textTransform: "uppercase",
-                color: "rgba(255,255,255,0.2)",
-                marginBottom: "1.25rem",
-                fontFamily: "Georgia, serif",
-              }}
-            >
-              Dimulai dalam
-            </p>
-            <div className="flex items-end justify-center gap-3 md:gap-5">
-              <CountdownUnit value={countdown.days} label="Hari" delay="0s" />
-              <Sep />
-              <CountdownUnit
-                value={countdown.hours}
-                label="Jam"
-                delay="0.08s"
-              />
-              <Sep />
-              <CountdownUnit
-                value={countdown.minutes}
-                label="Menit"
-                delay="0.16s"
-              />
-              <Sep />
-              <CountdownUnit
-                value={countdown.seconds}
-                label="Detik"
-                delay="0.24s"
-              />
-            </div>
-          </motion.div>
-        )} */}
 
         {/* ── Date info ── */}
         {stream_start && (
@@ -459,7 +435,7 @@ const LiveStream = ({ settings }) => {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                       <LogoLoader size={48} />
+                      <LogoLoader size={48} />
                     </div>
                   )}
                 </div>
@@ -529,27 +505,11 @@ const LiveStream = ({ settings }) => {
                   icon="solar:play-bold"
                   style={{ color: "rgba(201,168,76,0.8)", fontSize: 14 }}
                 />
-                Saksikan Live Stream
+                Join us for the live stream
               </motion.a>
             </div>
           )}
         </motion.div>
-
-        {/* Footer note */}
-        <motion.p
-          variants={item}
-          style={{
-            textAlign: "center",
-            marginTop: "4rem",
-            fontSize: 14,
-            letterSpacing: "0.2em",
-            color: "rgba(255,255,255,0.55)",
-            fontFamily: "Georgia, serif",
-            fontStyle: "italic",
-          }}
-        >
-          Your presence in spirit is our greatest blessing
-        </motion.p>
       </motion.div>
     </section>
   );

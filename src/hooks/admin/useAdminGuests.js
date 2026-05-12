@@ -155,12 +155,6 @@ export default function useAdminGuests() {
       .catch(() => {});
   }, []);
 
-  // ── Auto-fill created_by filter when panel opens ──
-  useEffect(() => {
-    if (showFilters && !filters.created_by && currentUserId) {
-      setFilter("created_by", currentUserId);
-    }
-  }, [showFilters, currentUserId, filters.created_by]);
 
   // ── Debounced search ──
   useEffect(() => {

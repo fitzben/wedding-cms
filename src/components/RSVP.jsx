@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useScrollReveal } from "../hooks/useScrollReveal";
 import { getWishes, invalidateWishes } from "../services/wishService";
 import LogoLoader from "./LogoLoader";
@@ -19,6 +19,18 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [wishes, setWishes] = useState([]);
   const [wishesLoading, setWishesLoading] = useState(true);
+  const [paxOpen, setPaxOpen] = useState(false);
+  const paxRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (paxRef.current && !paxRef.current.contains(e.target)) {
+        setPaxOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // Sync with guest data including existing RSVP
   useEffect(() => {
@@ -229,6 +241,39 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest pl-1">
                 Number of Guests
               </label>
+
+              {/* Mobile: custom dropdown */}
+              <div ref={paxRef} className="relative md:hidden">
+                <button
+                  type="button"
+                  onClick={() => setPaxOpen((v) => !v)}
+                  disabled={status === "loading"}
+                  className="w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-sm font-light text-gray-700 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon/30 focus:bg-white transition-all"
+                >
+                  <span>{formData.pax} {formData.pax === 1 ? "person" : "people"}</span>
+                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${paxOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                {paxOpen && (
+                  <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden">
+                    {Array.from({ length: maxPax }, (_, i) => i + 1).map((n) => (
+                      <li
+                        key={n}
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, pax: n }));
+                          setPaxOpen(false);
+                        }}
+                        className={`px-5 py-3 text-sm cursor-pointer transition-colors ${formData.pax === n ? "bg-maroon/10 text-maroon font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                      >
+                        {n} {n === 1 ? "person" : "people"}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              {/* Desktop: number input */}
               <input
                 type="number"
                 name="pax"
@@ -238,8 +283,8 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
                 onChange={handleChange}
                 required
                 placeholder="Including yourself"
-                className="w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-sm font-light text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon/30 focus:bg-white transition-all"
                 disabled={status === "loading"}
+                className="hidden md:block w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-sm font-light text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon/30 focus:bg-white transition-all"
               />
             </div>
 
