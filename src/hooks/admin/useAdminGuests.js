@@ -411,18 +411,14 @@ export default function useAdminGuests() {
   const handleImportCSV = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    try {
-      const res = await apiClient.postForm("/api/admin/guests/import", formData);
-      push(
-        `Import selesai: ${res.success} berhasil, ${res.failed} gagal`,
-        res.failed > 0 ? "info" : "success",
-      );
-      if (res.errors?.length) console.warn("Import errors:", res.errors);
-      invalidateGuestCache();
-      fetchGuests();
-    } catch (e) {
-      push(e.message || "Gagal import CSV", "error");
-    }
+    const res = await apiClient.postForm("/api/admin/guests/import", formData);
+    if (res.error) throw new Error(res.error);
+    invalidateGuestCache();
+    fetchGuests();
+    apiClient.get("/api/admin/guests/names")
+      .then((r) => setAllGuestNames(r.names || []))
+      .catch(() => {});
+    return res;
   };
 
   // Build WA URL — uses buildMessage helper above

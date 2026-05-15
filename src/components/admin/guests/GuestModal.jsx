@@ -69,6 +69,13 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
   const [confirmedDuplicate, setConfirmedDuplicate] = useState(false);
   const firstRef = useRef(null);
 
+  const isEdit = !!initial;
+
+  const [slugEditing, setSlugEditing] = useState(false);
+  const [slugWarningShown, setSlugWarningShown] = useState(false);
+  const [slugValue, setSlugValue] = useState("");
+  const [slugError, setSlugError] = useState("");
+
   useEffect(() => {
     if (open) {
       setConfirmedDuplicate(false);
@@ -96,6 +103,10 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
           : EMPTY_FORM,
       );
       setErrors({});
+      setSlugEditing(false);
+      setSlugWarningShown(false);
+      setSlugValue(initial?.slug || "");
+      setSlugError("");
       setTimeout(() => firstRef.current?.focus(), 80);
     }
   }, [open, initial]);
@@ -115,9 +126,19 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
       setErrors(e);
       return;
     }
+    const payload = { ...form };
+    if (isEdit && slugEditing && slugValue.trim()) {
+      if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slugValue)) {
+        setSlugError("Slug hanya boleh huruf kecil, angka, dan tanda hubung (-)");
+        return;
+      }
+      if (slugValue !== initial?.slug) {
+        payload.slug = slugValue;
+      }
+    }
     setSaving(true);
     try {
-      await onSave(form);
+      await onSave(payload);
       onClose();
     } finally {
       setSaving(false);
@@ -538,6 +559,111 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
               className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none transition-all resize-none"
             />
           </div>
+
+          {isEdit && (
+            <div className="pt-2 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  Slug / URL Undangan
+                </label>
+                {!slugEditing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!slugWarningShown) {
+                        setSlugWarningShown(true);
+                      } else {
+                        setSlugEditing(true);
+                      }
+                    }}
+                    className="text-xs text-amber-600 font-semibold hover:text-amber-700 flex items-center gap-1"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit Slug
+                  </button>
+                )}
+              </div>
+
+              {/* Warning box — tampil setelah klik Edit Slug pertama kali */}
+              {slugWarningShown && !slugEditing && (
+                <div className="mb-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                  <p className="text-xs font-semibold text-amber-700 flex items-center gap-1.5 mb-2">
+                    ⚠️ Perhatian sebelum ubah slug
+                  </p>
+                  <ul className="text-xs text-amber-600 space-y-1 mb-3 list-disc list-inside">
+                    <li>Link undangan lama akan <strong>tidak bisa diakses</strong></li>
+                    <li>Tamu yang sudah dapat link lama perlu dikirim link baru</li>
+                    <li>Pastikan kamu sudah backup link lama jika diperlukan</li>
+                  </ul>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setSlugEditing(true); }}
+                      className="flex-1 py-1.5 bg-amber-500 text-white text-xs font-semibold rounded-lg hover:bg-amber-600 transition-all"
+                    >
+                      Saya mengerti, lanjutkan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSlugWarningShown(false); }}
+                      className="flex-1 py-1.5 border border-gray-200 text-gray-600 text-xs font-semibold rounded-lg hover:bg-gray-50 transition-all"
+                    >
+                      Batal
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Slug field — read only atau editable */}
+              <div className="relative">
+                <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl border text-sm transition-all bg-gray-50 border-gray-200">
+                  <span className="text-gray-400 text-xs flex-shrink-0">
+                    /invite/
+                  </span>
+                  {slugEditing ? (
+                    <input
+                      type="text"
+                      value={slugValue}
+                      onChange={(e) => {
+                        const val = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+                        setSlugValue(val);
+                        setSlugError("");
+                      }}
+                      className="flex-1 bg-transparent outline-none text-gray-800 font-mono text-xs"
+                      placeholder="nama-tamu"
+                      autoFocus
+                    />
+                  ) : (
+                    <span className="flex-1 text-gray-700 font-mono text-xs truncate">
+                      {initial?.slug || "—"}
+                    </span>
+                  )}
+                  {slugEditing && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSlugEditing(false);
+                        setSlugWarningShown(false);
+                        setSlugValue(initial?.slug || "");
+                        setSlugError("");
+                      }}
+                      className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                      title="Batalkan"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
+                {slugError && (
+                  <p className="text-red-500 text-xs mt-1">{slugError}</p>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Footer */}
