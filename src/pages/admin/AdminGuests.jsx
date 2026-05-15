@@ -71,6 +71,19 @@ export const AdminGuests = () => {
     waBlastSkip,
   } = useAdminGuests();
 
+  const [importProgress, setImportProgress] = useState(null);
+
+  const handleImportWithProgress = async (file) => {
+    setImportProgress({ status: 'uploading', result: null });
+    try {
+      setImportProgress({ status: 'processing', result: null });
+      const result = await handleImportCSV(file);
+      setImportProgress({ status: 'done', result });
+    } catch (err) {
+      setImportProgress({ status: 'error', result: { error: err?.message || 'Gagal import' } });
+    }
+  };
+
   const duplicateGroups = findAllDuplicateGroups(allGuestNames);
 
   const handleDownloadTemplate = () => {
@@ -168,6 +181,131 @@ export const AdminGuests = () => {
   return (
     <>
       <Toast toasts={toasts} />
+
+      {/* Import Progress Modal */}
+      {importProgress && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 border border-gray-100 overflow-hidden">
+
+            {/* Header */}
+            <div className="px-6 pt-6 pb-4 border-b border-gray-50">
+              <h3 className="text-base font-bold text-gray-900">Import Tamu</h3>
+              <p className="text-xs text-gray-400 mt-0.5">
+                {importProgress.status === 'uploading' && 'Mengunggah file...'}
+                {importProgress.status === 'processing' && 'Memproses data tamu...'}
+                {importProgress.status === 'done' && 'Import selesai!'}
+                {importProgress.status === 'error' && 'Import gagal'}
+              </p>
+            </div>
+
+            <div className="px-6 py-5">
+              {/* Loading state */}
+              {(importProgress.status === 'uploading' || importProgress.status === 'processing') && (
+                <div className="flex flex-col items-center gap-4 py-4">
+                  <div className="relative w-16 h-16">
+                    <svg className="animate-spin w-16 h-16 text-gray-200" fill="none" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                    <svg className="animate-spin w-16 h-16 text-gray-900 absolute inset-0" fill="none" viewBox="0 0 24 24">
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold text-gray-700">
+                      {importProgress.status === 'uploading' ? 'Mengunggah file...' : 'Memproses baris data...'}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">Mohon tunggu, jangan tutup halaman ini</p>
+                  </div>
+                  {/* Animated progress bar */}
+                  <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div className="h-full bg-gray-900 rounded-full animate-pulse" style={{ width: '60%' }} />
+                  </div>
+                </div>
+              )}
+
+              {/* Success state */}
+              {importProgress.status === 'done' && importProgress.result && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Import berhasil</p>
+                      <p className="text-xs text-gray-400">Data sudah ditambahkan ke daftar tamu</p>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-emerald-600">
+                        {importProgress.result.success ?? 0}
+                      </div>
+                      <div className="text-xs text-emerald-600 font-medium mt-0.5">Berhasil</div>
+                    </div>
+                    <div className="bg-red-50 border border-red-100 rounded-xl p-3 text-center">
+                      <div className="text-2xl font-bold text-red-500">
+                        {importProgress.result.failed ?? 0}
+                      </div>
+                      <div className="text-xs text-red-500 font-medium mt-0.5">Dilewati</div>
+                    </div>
+                  </div>
+
+                  {/* Errors detail */}
+                  {importProgress.result.errors?.length > 0 && (
+                    <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 max-h-32 overflow-y-auto">
+                      <p className="text-xs font-semibold text-amber-700 mb-1.5">Detail baris yang dilewati:</p>
+                      {importProgress.result.errors.map((e, i) => (
+                        <p key={i} className="text-xs text-amber-600 leading-relaxed">{e}</p>
+                      ))}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={() => setImportProgress(null)}
+                    className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-all"
+                  >
+                    Selesai
+                  </button>
+                </div>
+              )}
+
+              {/* Error state */}
+              {importProgress.status === 'error' && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+                      <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="font-semibold text-gray-900">Import gagal</p>
+                      <p className="text-xs text-red-500 mt-0.5">
+                        {importProgress.result?.error || 'Terjadi kesalahan saat import'}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setImportProgress(null)}
+                    className="w-full py-2.5 border border-gray-200 text-gray-700 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {waBlastOpen && waBlastQueue.length > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm mx-4">
@@ -631,7 +769,7 @@ export const AdminGuests = () => {
                     className="hidden"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
-                      if (file) handleImportCSV(file);
+                      if (file) handleImportWithProgress(file);
                       e.target.value = "";
                     }}
                   />
