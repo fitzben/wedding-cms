@@ -35,6 +35,14 @@ export default function useGiftRegistry() {
     return apiClient.get(`/api/admin/gifts/registry/${id}`);
   }, []);
 
+  const revokeClaim = useCallback(async (registryId, claimId) => {
+    const res = await apiClient.delete(
+      `/api/admin/gifts/registry/${registryId}/claims/${claimId}`
+    );
+    if (res && res.error) throw new Error(res.error);
+    await fetchItems();
+  }, [fetchItems]);
+
   return {
     items,
     loading,
@@ -43,5 +51,6 @@ export default function useGiftRegistry() {
     updateItem,
     deleteItem,
     fetchClaims,
+    revokeClaim,
   };
 }

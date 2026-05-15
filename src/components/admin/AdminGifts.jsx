@@ -881,8 +881,9 @@ export function RegistryModal({ open, onClose, onSave, initial }) {
 }
 
 // ─── Claims Drawer ────────────────────────────────────────────────────────────
-export function ClaimsDrawer({ item, onClose }) {
+export function ClaimsDrawer({ item, onClose, onRevoke }) {
   const [claims, setClaims] = useState([]);
+  const [revokingId, setRevokingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const { fetchClaims } = useGiftRegistry();
 
@@ -969,10 +970,10 @@ export function ClaimsDrawer({ item, onClose }) {
             claims.map((c) => (
               <div
                 key={c.id}
-                className="p-4 rounded-xl border border-gray-100 bg-gray-50/50"
+                className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 group"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-900 text-sm">
                       {c.claimer_name}
                     </p>
@@ -982,9 +983,39 @@ export function ClaimsDrawer({ item, onClose }) {
                       </p>
                     )}
                   </div>
-                  <span className="flex-shrink-0 px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold border border-indigo-100">
-                    ×{c.quantity}
-                  </span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold border border-indigo-100">
+                      ×{c.quantity}
+                    </span>
+                    <button
+                      onClick={async () => {
+                        if (!confirm(`Revoke claim dari ${c.claimer_name}?`)) return;
+                        setRevokingId(c.id);
+                        try {
+                          await onRevoke(item.id, c.id);
+                          setClaims((prev) => prev.filter((x) => x.id !== c.id));
+                        } catch {
+                          alert("Gagal revoke claim");
+                        } finally {
+                          setRevokingId(null);
+                        }
+                      }}
+                      disabled={revokingId === c.id}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
+                      title="Revoke claim ini"
+                    >
+                      {revokingId === c.id ? (
+                        <svg className="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
                 <p className="text-gray-400 text-[10px] mt-2">
                   {new Date(c.created_at).toLocaleString("id-ID")}
@@ -1000,7 +1031,7 @@ export function ClaimsDrawer({ item, onClose }) {
 
 // ─── Registry Tab ─────────────────────────────────────────────────────────────
 export function RegistryTab() {
-  const { items, loading, fetchItems, createItem, updateItem, deleteItem } =
+  const { items, loading, fetchItems, createItem, updateItem, deleteItem, revokeClaim } =
     useGiftRegistry();
   const [modalOpen, setModalOpen] = useState(false);
   const [editItem, setEditItem] = useState(null);
@@ -1064,7 +1095,7 @@ export function RegistryTab() {
         onSave={handleSave}
         initial={editItem}
       />
-      <ClaimsDrawer item={claimsItem} onClose={() => setClaimsItem(null)} />
+      <ClaimsDrawer item={claimsItem} onClose={() => setClaimsItem(null)} onRevoke={revokeClaim} />
       {confirmDel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
