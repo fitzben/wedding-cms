@@ -896,6 +896,8 @@ export const AdminGuests = () => {
             handleRestore={handleRestore}
             handleMarkInvited={handleMarkInvited}
             openWhatsApp={openWhatsApp}
+            copyLink={copyLink}
+            copyLinkWithMessage={copyLinkWithMessage}
             showDeleted={showDeleted}
             isAdmin={isAdmin}
             groups={groups}
