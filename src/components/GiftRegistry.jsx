@@ -128,6 +128,33 @@ function ClaimModal({ item, onClose, onSuccess, guestName }) {
               </p>
             </div>
 
+            {/* Delivery address — shown after successful claim */}
+            {done.delivery_address && (
+              <div className="w-full bg-gold/10 border border-gold/30 rounded-xl p-4 text-left">
+                <p className="font-sans text-[9px] text-gold tracking-[0.2em] uppercase mb-2 flex items-center gap-1.5">
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Alamat Pengiriman
+                </p>
+                <p className="font-sans text-[12px] text-ivory/80 leading-relaxed whitespace-pre-line">
+                  {done.delivery_address}
+                </p>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(done.delivery_address);
+                  }}
+                  className="mt-3 flex items-center gap-1.5 text-[10px] text-gold/70 hover:text-gold transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3" />
+                  </svg>
+                  Salin alamat
+                </button>
+              </div>
+            )}
+
             {/* Show shop link after claim */}
             {item.shop_url && (
               <a
@@ -289,7 +316,26 @@ function ClaimModal({ item, onClose, onSuccess, guestName }) {
 function GiftCard({ item, onClaim, index }) {
   const [hovered, setHovered] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [showAddress, setShowAddress] = useState(false);
+  const [address, setAddress] = useState(null);
+  const [addressLoading, setAddressLoading] = useState(false);
   const isFull = item.quantity_claimed >= item.quantity_needed;
+
+  const handleShowAddress = async () => {
+    if (address) { setShowAddress(true); return; }
+    setAddressLoading(true);
+    try {
+      const res = await fetch(`${BASE_URL}/api/gifts/registry/${item.id}/address`);
+      const data = await res.json();
+      setAddress(data.delivery_address || "Alamat belum tersedia");
+      setShowAddress(true);
+    } catch {
+      setAddress("Gagal memuat alamat");
+      setShowAddress(true);
+    } finally {
+      setAddressLoading(false);
+    }
+  };
   const isDesktop = typeof window !== "undefined" && window.innerWidth > 767;
 
   // Pattern-based styling
@@ -419,6 +465,51 @@ function GiftCard({ item, onClaim, index }) {
           >
             Claim Gift →
           </button>
+        )}
+
+        {item.quantity_claimed > 0 && (
+          <button
+            onClick={handleShowAddress}
+            disabled={addressLoading}
+            className="mt-3 w-full flex items-center justify-center gap-1.5 py-2 border border-gold/30 text-gold text-[11px] tracking-[0.1em] uppercase rounded transition-all hover:bg-gold/10 disabled:opacity-50"
+          >
+            {addressLoading ? (
+              <svg className="animate-spin w-3 h-3" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              </svg>
+            )}
+            Lihat Alamat Pengiriman
+          </button>
+        )}
+
+        {showAddress && address && (
+          <div className="mt-3 bg-gold/10 border border-gold/30 rounded-xl p-4">
+            <p className="font-sans text-[9px] text-gold tracking-[0.2em] uppercase mb-2">
+              Alamat Pengiriman
+            </p>
+            <p className="font-sans text-[12px] text-ivory/80 leading-relaxed whitespace-pre-line">
+              {address}
+            </p>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={() => navigator.clipboard.writeText(address)}
+                className="flex-1 text-[10px] text-gold/70 hover:text-gold border border-gold/20 rounded-lg py-1.5 transition-colors"
+              >
+                Salin
+              </button>
+              <button
+                onClick={() => setShowAddress(false)}
+                className="flex-1 text-[10px] text-ivory/50 hover:text-ivory border border-white/10 rounded-lg py-1.5 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
         )}
       </div>
     </div>

@@ -640,6 +640,7 @@ export function RegistryModal({ open, onClose, onSave, initial }) {
               quantity_needed: initial.quantity_needed || 1,
               price_range: initial.price_range || "",
               shop_url: initial.shop_url || "",
+              delivery_address: initial.delivery_address || "",
               is_active: initial.is_active !== 0,
             }
           : EMPTY_REG,
@@ -670,6 +671,7 @@ export function RegistryModal({ open, onClose, onSave, initial }) {
         ...form,
         quantity_needed: parseInt(form.quantity_needed) || 1,
         is_active: form.is_active ? 1 : 0,
+        delivery_address: form.delivery_address?.trim() || null,
       });
       onClose();
     } finally {
@@ -812,6 +814,24 @@ export function RegistryModal({ open, onClose, onSave, initial }) {
             </div>
           </div>
           <div>
+            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+              Alamat Pengiriman
+              <span className="ml-1.5 text-gray-300 font-normal normal-case tracking-normal">
+                opsional — ditampilkan ke claimer setelah claim
+              </span>
+            </label>
+            <textarea
+              value={form.delivery_address || ""}
+              onChange={(e) => setForm((p) => ({ ...p, delivery_address: e.target.value }))}
+              rows={3}
+              placeholder={"e.g. Jl. Sudirman No. 12, Jakarta Selatan 12190\nHubungi: 0812-xxxx-xxxx (Benjamin)"}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 text-sm outline-none transition-all focus:border-gray-400 focus:ring-2 focus:ring-gray-100 resize-none bg-white"
+            />
+            <p className="text-[10px] text-gray-400 mt-1">
+              💡 Alamat ini hanya muncul kepada tamu setelah mereka berhasil claim item ini
+            </p>
+          </div>
+          <div>
             <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wider">
               URL Foto
             </label>
@@ -884,6 +904,7 @@ export function RegistryModal({ open, onClose, onSave, initial }) {
 export function ClaimsDrawer({ item, onClose, onRevoke }) {
   const [claims, setClaims] = useState([]);
   const [revokingId, setRevokingId] = useState(null);
+  const [revokeTarget, setRevokeTarget] = useState(null);
   const [loading, setLoading] = useState(true);
   const { fetchClaims } = useGiftRegistry();
 
@@ -908,6 +929,45 @@ export function ClaimsDrawer({ item, onClose, onRevoke }) {
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
+      {/* Revoke confirmation modal */}
+      {revokeTarget && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs mx-4 border border-gray-100">
+            <h3 className="font-bold text-gray-900 mb-1">Batalkan Claim</h3>
+            <p className="text-gray-500 text-sm mb-5">
+              Batalkan claim dari{" "}
+              <strong className="text-gray-800">{revokeTarget.claimer_name}</strong>?
+              Tindakan ini tidak dapat dibatalkan.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setRevokeTarget(null)}
+                className="flex-1 px-4 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-all"
+              >
+                Batal
+              </button>
+              <button
+                onClick={async () => {
+                  const target = revokeTarget;
+                  setRevokeTarget(null);
+                  setRevokingId(target.id);
+                  try {
+                    await onRevoke(item.id, target.id);
+                    setClaims((prev) => prev.filter((x) => x.id !== target.id));
+                  } catch {
+                    alert("Gagal membatalkan claim");
+                  } finally {
+                    setRevokingId(null);
+                  }
+                }}
+                className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all"
+              >
+                Batalkan Claim
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div
         className="absolute inset-0 bg-black/40 backdrop-blur-sm"
         onClick={onClose}
@@ -988,17 +1048,9 @@ export function ClaimsDrawer({ item, onClose, onRevoke }) {
                       ×{c.quantity}
                     </span>
                     <button
-                      onClick={async () => {
-                        if (!confirm(`Revoke claim dari ${c.claimer_name}?`)) return;
-                        setRevokingId(c.id);
-                        try {
-                          await onRevoke(item.id, c.id);
-                          setClaims((prev) => prev.filter((x) => x.id !== c.id));
-                        } catch {
-                          alert("Gagal revoke claim");
-                        } finally {
-                          setRevokingId(null);
-                        }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRevokeTarget(c);
                       }}
                       disabled={revokingId === c.id}
                       className="w-7 h-7 rounded-lg flex items-center justify-center text-gray-300 hover:text-red-500 hover:bg-red-50 transition-all disabled:opacity-50"
