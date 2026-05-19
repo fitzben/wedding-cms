@@ -603,7 +603,17 @@ const GiftRegistry = () => {
 
   useEffect(() => {
     API.list()
-      .then((r) => setItems(r.items || []))
+      .then((r) => {
+        const fetched = r.items || [];
+        const sorted = fetched.sort((a, b) => {
+          const aFull = a.quantity_claimed >= a.quantity_needed;
+          const bFull = b.quantity_claimed >= b.quantity_needed;
+          if (aFull && !bFull) return 1;
+          if (!aFull && bFull) return -1;
+          return 0;
+        });
+        setItems(sorted);
+      })
       .catch(() => {})
       .finally(() => setLoadingItems(false));
   }, []);
@@ -617,8 +627,8 @@ const GiftRegistry = () => {
 
   // Update items in local state after successful claim
   const handleClaimSuccess = (itemId, newClaimed, attendeeName) => {
-    setItems((prev) =>
-      prev.map((i) =>
+    setItems((prev) => {
+      const updated = prev.map((i) =>
         i.id === itemId
           ? {
               ...i,
@@ -626,8 +636,15 @@ const GiftRegistry = () => {
               claimer_names: [...(i.claimer_names || []), attendeeName],
             }
           : i,
-      ),
-    );
+      );
+      return updated.sort((a, b) => {
+        const aFull = a.quantity_claimed >= a.quantity_needed;
+        const bFull = b.quantity_claimed >= b.quantity_needed;
+        if (aFull && !bFull) return 1;
+        if (!aFull && bFull) return -1;
+        return 0;
+      });
+    });
   };
 
   return (
