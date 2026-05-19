@@ -40,7 +40,8 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
         name: guest.display_name || prev.name,
         pax: guest.rsvp_pax || prev.pax,
         attendance: guest.rsvp_attendance || prev.attendance,
-        event_attendance: guest.rsvp_event_attendance ||
+        event_attendance:
+          guest.rsvp_event_attendance ||
           (eventAccess !== "both" ? eventAccess : prev.event_attendance),
         message: guest.rsvp_message || prev.message,
       }));
@@ -89,7 +90,10 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
           ...formData,
           pax: parseInt(formData.pax, 10) || 1,
           guest_id: guest?.id,
-          event_attendance: formData.attendance === "no" ? null : formData.event_attendance || null,
+          event_attendance:
+            formData.attendance === "no"
+              ? null
+              : formData.event_attendance || null,
         }),
       });
 
@@ -116,8 +120,10 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
 
       if (!rsvpResponse.ok) {
         const data = await rsvpResponse.json();
-        if (rsvpResponse.status === 403 &&
-            (data.error?.includes("deadline") || data.error?.includes("closed"))) {
+        if (
+          rsvpResponse.status === 403 &&
+          (data.error?.includes("deadline") || data.error?.includes("closed"))
+        ) {
           setErrorMessage("Maaf, batas waktu RSVP sudah berakhir.");
           setStatus("error");
           return;
@@ -250,25 +256,39 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
                   disabled={status === "loading"}
                   className="w-full px-5 py-4 bg-gray-50/50 border border-gray-100 rounded-2xl text-sm font-light text-gray-700 text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-maroon/20 focus:border-maroon/30 focus:bg-white transition-all"
                 >
-                  <span>{formData.pax} {formData.pax === 1 ? "person" : "people"}</span>
-                  <svg className={`w-4 h-4 text-gray-400 transition-transform ${paxOpen ? "rotate-180" : ""}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <span>
+                    {formData.pax} {formData.pax === 1 ? "person" : "people"}
+                  </span>
+                  <svg
+                    className={`w-4 h-4 text-gray-400 transition-transform ${paxOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
                   </svg>
                 </button>
                 {paxOpen && (
                   <ul className="absolute z-10 mt-1 w-full bg-white border border-gray-100 rounded-2xl shadow-lg overflow-hidden">
-                    {Array.from({ length: maxPax }, (_, i) => i + 1).map((n) => (
-                      <li
-                        key={n}
-                        onClick={() => {
-                          setFormData((prev) => ({ ...prev, pax: n }));
-                          setPaxOpen(false);
-                        }}
-                        className={`px-5 py-3 text-sm cursor-pointer transition-colors ${formData.pax === n ? "bg-maroon/10 text-maroon font-medium" : "text-gray-700 hover:bg-gray-50"}`}
-                      >
-                        {n} {n === 1 ? "person" : "people"}
-                      </li>
-                    ))}
+                    {Array.from({ length: maxPax }, (_, i) => i + 1).map(
+                      (n) => (
+                        <li
+                          key={n}
+                          onClick={() => {
+                            setFormData((prev) => ({ ...prev, pax: n }));
+                            setPaxOpen(false);
+                          }}
+                          className={`px-5 py-3 text-sm cursor-pointer transition-colors ${formData.pax === n ? "bg-maroon/10 text-maroon font-medium" : "text-gray-700 hover:bg-gray-50"}`}
+                        >
+                          {n} {n === 1 ? "person" : "people"}
+                        </li>
+                      ),
+                    )}
                   </ul>
                 )}
               </div>
@@ -292,10 +312,10 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
               <label className="block text-xs font-semibold text-gray-400 uppercase tracking-widest pl-1 text-center">
                 Will you attend?
               </label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {[
                   { value: "yes", label: "Yes" },
-                  { value: "maybe", label: "Maybe" },
+                  // { value: "maybe", label: "Maybe" },
                   { value: "no", label: "No" },
                 ].map(({ value, label }) => (
                   <label key={value} className="relative cursor-pointer group">
@@ -327,7 +347,10 @@ const RSVP = ({ guest, guestName, maxPax = 2, eventAccess = "both" }) => {
                     { value: "both", label: "Both Events", icon: "🎊" },
                     { value: "resepsi_only", label: "Reception", icon: "🥂" },
                   ].map(({ value, label, icon }) => (
-                    <label key={value} className="relative cursor-pointer group">
+                    <label
+                      key={value}
+                      className="relative cursor-pointer group"
+                    >
                       <input
                         type="radio"
                         name="event_attendance"
