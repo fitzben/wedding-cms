@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+
 export function useJourney() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetch("/api/journey")
+    fetch(`${BASE_URL}/api/journey`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
