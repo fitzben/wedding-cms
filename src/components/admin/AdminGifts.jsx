@@ -660,7 +660,8 @@ export function RegistryModal({ open, onClose, onSave, initial }) {
   const submit = async () => {
     const e = {};
     if (!form.name.trim()) e.name = "Required";
-    if (form.quantity_needed < 1) e.quantity_needed = "Min 1";
+    const qty = parseInt(form.quantity_needed);
+    if (isNaN(qty) || qty < 1) e.quantity_needed = "Min 1";
     if (Object.keys(e).length) {
       setErrors(e);
       return;
@@ -778,9 +779,10 @@ export function RegistryModal({ open, onClose, onSave, initial }) {
                 min={1}
                 value={form.quantity_needed}
                 onChange={(e) => {
+                  const val = e.target.value;
                   setForm((p) => ({
                     ...p,
-                    quantity_needed: parseInt(e.target.value) || 1,
+                    quantity_needed: val === "" ? "" : val,
                   }));
                   setErrors((p) => ({ ...p, quantity_needed: "" }));
                 }}
