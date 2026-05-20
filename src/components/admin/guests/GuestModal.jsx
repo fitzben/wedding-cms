@@ -116,7 +116,8 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
     if (!form.first_name.trim()) e.first_name = "Required";
     if (!form.last_name.trim()) e.last_name = "Required";
     if (!form.phone_number.trim()) e.phone_number = "Required";
-    if (form.pax_allowed < 1 || form.pax_allowed > 20) e.pax_allowed = "1–20";
+    const pax = parseInt(form.pax_allowed);
+    if (isNaN(pax) || pax < 1 || pax > 20) e.pax_allowed = "1–20";
     return e;
   };
 
@@ -126,7 +127,10 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
       setErrors(e);
       return;
     }
-    const payload = { ...form };
+    const payload = { 
+      ...form,
+      pax_allowed: parseInt(form.pax_allowed)
+    };
     if (isEdit && slugEditing && slugValue.trim()) {
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slugValue)) {
         setSlugError("Slug hanya boleh huruf kecil, angka, dan tanda hubung (-)");
@@ -394,9 +398,10 @@ export function GuestModal({ open, onClose, onSave, initial, groups, allGuests, 
                 max={20}
                 {...field("pax_allowed")}
                 onChange={(e) => {
+                  const val = e.target.value;
                   setForm((p) => ({
                     ...p,
-                    pax_allowed: parseInt(e.target.value) || 1,
+                    pax_allowed: val === "" ? "" : val,
                   }));
                   setErrors((p) => ({ ...p, pax_allowed: "" }));
                 }}
