@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 
 import useGifts from "../../hooks/useGifts";
 import { Toast } from "../../components/admin/components";
-import { FormatIDR } from "../../utils/helpers";
+import { FormatIDR, StatusBadge } from "../../utils/helpers";
 import {
   GiftModal,
   GiftRow,

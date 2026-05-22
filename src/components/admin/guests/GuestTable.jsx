@@ -25,6 +25,7 @@ export function GuestTable({
   groups,
   search,
   openCreate,
+  openNotesModal,
 }) {
   return (
     <div className="hidden md:block overflow-x-auto rounded-xl border border-gray-100">
@@ -244,19 +245,28 @@ export function GuestTable({
                     />
                   </td>
 
-                  {/* Notes — icon-only with tooltip */}
+                  {/* Notes — clickable icon */}
                   <td className="py-2 px-3 text-center">
                     {guest.notes ? (
-                      <span
+                      <button
+                        onClick={() => openNotesModal(guest)}
                         title={guest.notes}
-                        className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 border border-amber-200 text-amber-500 cursor-default"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 border border-amber-200 text-amber-500 hover:bg-amber-100 hover:border-amber-300 transition-all cursor-pointer"
                       >
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
-                      </span>
+                      </button>
                     ) : (
-                      <span className="text-gray-200">—</span>
+                      <button
+                        onClick={() => openNotesModal(guest)}
+                        title="Tambah catatan"
+                        className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-50 border border-gray-200 text-gray-300 hover:bg-gray-100 hover:text-gray-500 hover:border-gray-300 transition-all cursor-pointer"
+                      >
+                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                        </svg>
+                      </button>
                     )}
                   </td>
 
