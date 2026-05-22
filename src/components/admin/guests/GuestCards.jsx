@@ -26,6 +26,7 @@ export function GuestCards({
   groups,
   search,
   openCreate,
+  openNotesModal,
 }) {
   return (
     <div className="md:hidden px-3 pb-4 space-y-2.5">
@@ -227,10 +228,29 @@ export function GuestCards({
                 </div>
 
                 {/* Notes */}
-                {guest.notes && (
-                  <p className="mt-2.5 ml-[52px] text-xs italic text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 line-clamp-2">
+                {guest.notes ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openNotesModal(guest);
+                    }}
+                    className="mt-2.5 ml-[52px] w-[calc(100%-52px)] text-left text-xs italic text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2 line-clamp-2 hover:bg-amber-50 hover:border-amber-200 hover:text-amber-600 transition-all"
+                  >
                     {guest.notes}
-                  </p>
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openNotesModal(guest);
+                    }}
+                    className="mt-2.5 ml-[52px] flex items-center gap-1.5 text-xs text-gray-300 hover:text-gray-500 transition-all"
+                  >
+                    <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Tambah catatan
+                  </button>
                 )}
               </div>
 

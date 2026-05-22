@@ -277,6 +277,23 @@ export default function useAdminGuests() {
     }
   };
 
+  const handleUpdateNotes = async (id, newNotes) => {
+    try {
+      const res = await API.update(id, { notes: newNotes });
+      if (res.error) {
+        push(res.error, "error");
+        return;
+      }
+      setGuests((prev) =>
+        prev.map((g) => (g.id === id ? { ...g, notes: newNotes } : g)),
+      );
+      push("Catatan berhasil diperbarui", "success");
+      invalidateGuestCache();
+    } catch {
+      push("Gagal memperbarui catatan", "error");
+    }
+  };
+
   const handleDelete = (id, name) => {
     setConfirm({
       open: true,
@@ -583,6 +600,7 @@ export default function useAdminGuests() {
     handleMarkVerified,
     // actions
     handleUpdatePax,
+    handleUpdateNotes,
     handleDelete,
     handleRestore,
     handleBulkDelete,

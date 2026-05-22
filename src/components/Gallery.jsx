@@ -13,6 +13,7 @@ function Lightbox({ items, initialIndex, onClose }) {
   const [index, setIndex] = useState(initialIndex);
   const touchStartX = useRef(null);
   const touchStartY = useRef(null);
+  const touchMoved = useRef(false);
   const current = items[index];
 
   const prev = useCallback(
@@ -46,6 +47,7 @@ function Lightbox({ items, initialIndex, onClose }) {
   const handleTouchStart = useCallback((e) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
+    touchMoved.current = false;
   }, []);
 
   const handleTouchEnd = useCallback(
@@ -53,8 +55,8 @@ function Lightbox({ items, initialIndex, onClose }) {
       if (touchStartX.current === null) return;
       const dx = e.changedTouches[0].clientX - touchStartX.current;
       const dy = e.changedTouches[0].clientY - touchStartY.current;
-      // Only trigger if horizontal swipe dominates
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 40) {
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 30) {
+        touchMoved.current = true;
         if (dx < 0) next();
         else prev();
       }
@@ -63,6 +65,12 @@ function Lightbox({ items, initialIndex, onClose }) {
     },
     [prev, next],
   );
+
+  const handleTouchMove = useCallback((e) => {
+    if (touchStartX.current === null) return;
+    const dx = Math.abs(e.touches[0].clientX - touchStartX.current);
+    if (dx > 10) touchMoved.current = true;
+  }, []);
 
   // Prevent body scroll when lightbox is open
   useEffect(() => {
@@ -78,8 +86,9 @@ function Lightbox({ items, initialIndex, onClose }) {
     <div
       className="fixed inset-0 z-[200] flex items-center justify-center"
       style={{ background: "rgba(10,8,6,0.92)", backdropFilter: "blur(12px)" }}
-      onClick={onClose}
+      onClick={() => { if (!touchMoved.current) onClose(); }}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* Close */}
@@ -115,6 +124,27 @@ function Lightbox({ items, initialIndex, onClose }) {
       >
         {index + 1} / {items.length}
       </div>
+
+      {/* Swipe hint — mobile only */}
+      {items.length > 1 && (
+        <div
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 md:hidden pointer-events-none"
+          style={{
+            color: "rgba(255,255,255,0.3)",
+            fontSize: "11px",
+            letterSpacing: "0.1em",
+            animation: "fadeOut 3s ease-in-out 1.5s forwards",
+          }}
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M15 19l-7-7 7-7" />
+          </svg>
+          <span>swipe</span>
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      )}
 
       {/* Prev - hidden on mobile (use swipe instead) */}
       {items.length > 1 && (
@@ -204,48 +234,14 @@ function Lightbox({ items, initialIndex, onClose }) {
         </button>
       )}
 
-      {/* Swipe hint - mobile only, fades out */}
-      {items.length > 1 && (
-        <div
-          className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 md:hidden"
-          style={{
-            color: "rgba(255,255,255,0.35)",
-            fontSize: "11px",
-            fontFamily: "Georgia, serif",
-            fontStyle: "italic",
-            letterSpacing: "0.05em",
-          }}
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          >
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-          swipe to navigate
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          >
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
-        </div>
-      )}
-
       <style>{`
         @keyframes lightboxIn {
           from { opacity: 0; transform: scale(0.92); }
           to   { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeOut {
+          from { opacity: 1; }
+          to { opacity: 0; }
         }
       `}</style>
     </div>

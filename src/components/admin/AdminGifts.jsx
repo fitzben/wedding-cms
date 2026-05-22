@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { FormatIDR } from "../../utils/helpers";
+import { FormatIDR, StatusBadge, TypeBadge } from "../../utils/helpers";
 import {
   BANKS,
   EMPTY_BANK,

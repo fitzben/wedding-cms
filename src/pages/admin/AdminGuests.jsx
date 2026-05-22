@@ -11,6 +11,7 @@ import { GuestFilters } from "../../components/admin/guests/GuestFilters";
 import { GuestTable } from "../../components/admin/guests/GuestTable";
 import { GuestCards } from "../../components/admin/guests/GuestCards";
 import { exportCSV } from "../../components/admin/guests/GuestBadges";
+import { NotesModal } from "../../components/admin/guests/NotesModal";
 
 export const AdminGuests = () => {
   const {
@@ -46,6 +47,7 @@ export const AdminGuests = () => {
     handleSave,
     handleMarkVerified,
     handleUpdatePax,
+    handleUpdateNotes,
     handleBulkDelete,
     handleDelete,
     handleRestore,
@@ -72,6 +74,19 @@ export const AdminGuests = () => {
   } = useAdminGuests();
 
   const [importProgress, setImportProgress] = useState(null);
+
+  // ── Notes modal state ──
+  const [notesModal, setNotesModal] = useState({ open: false, guest: null });
+
+  const openNotesModal = (guest) => {
+    setNotesModal({ open: true, guest });
+  };
+  const closeNotesModal = () => {
+    setNotesModal({ open: false, guest: null });
+  };
+  const handleSaveNotes = async (newNotes) => {
+    await handleUpdateNotes(notesModal.guest.id, newNotes);
+  };
 
   const handleImportWithProgress = async (file) => {
     setImportProgress({ status: 'uploading', result: null });
@@ -439,6 +454,14 @@ export const AdminGuests = () => {
       <ConfirmDialog
         {...confirm}
         onCancel={() => setConfirm({ open: false })}
+      />
+
+      <NotesModal
+        open={notesModal.open}
+        guest={notesModal.guest}
+        onClose={closeNotesModal}
+        onSave={handleSaveNotes}
+        readOnly={!isAdmin}
       />
 
       <GuestModal
@@ -881,6 +904,7 @@ export const AdminGuests = () => {
             groups={groups}
             search={search}
             openCreate={openCreate}
+            openNotesModal={openNotesModal}
           />
 
           <GuestCards
@@ -903,6 +927,7 @@ export const AdminGuests = () => {
             groups={groups}
             search={search}
             openCreate={openCreate}
+            openNotesModal={openNotesModal}
           />
 
           {/* ── Pagination ── */}
