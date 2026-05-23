@@ -153,12 +153,17 @@ const Hero = ({ guestName, onOpenInvitation }) => {
         </button>
 
         {/* Tap anywhere hint — mobile only */}
-        <p
-          className="md:hidden text-[9px] text-offwhite/30 tracking-[0.2em] uppercase mt-4 font-light hero-elem anim-hero-btn"
+        <div
+          className="flex flex-col items-center mt-4 gap-1 hero-elem anim-hero-btn"
           style={{ animationDelay: "2500ms" }}
         >
-          atau tap di mana saja
-        </p>
+          <p className="text-[9px] text-offwhite/30 tracking-[0.2em] uppercase font-light">
+            atau tap di mana saja
+          </p>
+          <p className="text-[9px] text-offwhite/50 tracking-[0.15em] uppercase font-light italic font-serif">
+            or tap anywhere
+          </p>
+        </div>
       </div>
 
       {/* Scroll Chevron */}

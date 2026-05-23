@@ -763,22 +763,39 @@ const Hashtag = ({ isVisible }) => {
         </div>
 
         {/* Hashtag + date */}
-        <p
+        <div
           id="ht-date"
+          className="flex flex-col items-center gap-2"
           style={{
             opacity: 0,
             transform: "translateY(10px)",
             transition: transBase,
-            fontSize: "11px",
-            letterSpacing: "0.35em",
-            textTransform: "uppercase",
-            color: "rgba(255,255,255,0.35)",
-            fontFamily: "Georgia, serif",
             marginBottom: "3rem",
           }}
         >
-          {hashtag} &nbsp;&middot;&nbsp; {fmtDate}
-        </p>
+          <span
+            style={{
+              fontSize: "11px",
+              letterSpacing: "0.35em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.35)",
+              fontFamily: "Georgia, serif",
+            }}
+          >
+            {hashtag}
+          </span>
+          <span
+            style={{
+              fontSize: "11px",
+              letterSpacing: "0.35em",
+              textTransform: "uppercase",
+              color: "rgba(201,168,76,0.6)",
+              fontFamily: "Georgia, serif",
+            }}
+          >
+            {fmtDate}
+          </span>
+        </div>
 
         {/* Scroll hint */}
         <div
