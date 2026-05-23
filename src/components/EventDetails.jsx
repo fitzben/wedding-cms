@@ -2,7 +2,7 @@ import { Icon } from '@iconify/react';
 import { useScrollReveal } from '../hooks/useScrollReveal';
 
 // ─── EventCard defined OUTSIDE parent to avoid remount on every re-render ─────
-const EventCard = ({ title, venue, time, address, mapsUrl, delay }) => (
+const EventCard = ({ title, venue, time, date, address, mapsUrl, delay }) => (
   <div
     className="min-w-[280px] max-w-[480px] min-h-[400px] p-[48px_40px] bg-ivory text-charcoal border border-gold rounded text-center relative flex flex-col justify-center items-center obs-hide obs-up hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(61,5,16,0.3)] transition-all duration-300 group"
     style={{ animationDelay: delay }}
@@ -25,7 +25,14 @@ const EventCard = ({ title, venue, time, address, mapsUrl, delay }) => (
     <div className="flex flex-col items-center space-y-6 text-charcoal flex-grow">
       <div className="flex flex-col items-center">
         <Icon icon="solar:clock-circle-linear" className="text-2xl text-gold mb-2" style={{ strokeWidth: 1.5 }} />
-        <p className="text-sm font-light uppercase tracking-[0.1em]">{time || '--:--'}</p>
+        <p className="text-sm font-light uppercase tracking-[0.1em]">
+          {time ? `${time} WIB` : '--:--'}
+        </p>
+        {date && (
+          <p className="text-xs text-charcoal/60 font-light mt-1 tracking-[0.05em]">
+            {date}
+          </p>
+        )}
       </div>
       <div className="flex flex-col items-center mb-4">
         <Icon icon="solar:map-point-linear" className="text-2xl text-gold mb-2" style={{ strokeWidth: 1.5 }} />
@@ -48,6 +55,16 @@ const EventCard = ({ title, venue, time, address, mapsUrl, delay }) => (
 );
 
 // ─── EventDetails ─────────────────────────────────────────────────────────────
+const formatDate = (dateStr) => {
+  if (!dateStr) return null;
+  return new Date(dateStr + "T00:00:00").toLocaleDateString("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+};
+
 const EventDetails = ({ eventAccess, settings = {} }) => {
   const showHM = eventAccess === 'both' || eventAccess === 'hm_only';
   const showResepsi = eventAccess === 'both' || eventAccess === 'resepsi_only';
@@ -67,6 +84,7 @@ const EventDetails = ({ eventAccess, settings = {} }) => {
               title="Holy Matrimony"
               venue={settings?.hm_venue_name}
               time={settings?.hm_time_start ? `${settings.hm_time_start} - ${settings.hm_time_end || 'End'}` : null}
+              date={formatDate(settings?.hm_date)}
               address={settings?.hm_address}
               mapsUrl={settings?.hm_maps_url}
               delay="200ms"
@@ -77,6 +95,7 @@ const EventDetails = ({ eventAccess, settings = {} }) => {
               title="Wedding Reception"
               venue={settings?.resepsi_venue_name}
               time={settings?.resepsi_time_start ? `${settings.resepsi_time_start} - ${settings.resepsi_time_end || 'End'}` : null}
+              date={formatDate(settings?.resepsi_date)}
               address={settings?.resepsi_address}
               mapsUrl={settings?.resepsi_maps_url}
               delay="350ms"
