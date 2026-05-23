@@ -70,10 +70,11 @@ const Hero = ({ guestName, onOpenInvitation }) => {
   return (
     <header
       id="hero-section"
-      className={`relative min-h-screen min-h-[100dvh] flex flex-col items-center justify-between overflow-y-auto overflow-x-hidden bg-black py-10 md:py-20 w-full transition-all duration-600 ${
+      className={`relative min-h-screen min-h-[100dvh] flex flex-col items-center justify-between overflow-y-auto overflow-x-hidden bg-black py-10 md:py-20 w-full transition-all duration-600 cursor-pointer ${
         isOpened ? "opacity-0 scale-[1.04]" : "opacity-100 scale-100"
       }`}
       style={{ transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)" }}
+      onClick={!isOpened ? handleOpenClick : undefined}
       inert={isOpened ? "" : undefined}
     >
       <div className="absolute inset-0 w-full h-full">
@@ -83,7 +84,7 @@ const Hero = ({ guestName, onOpenInvitation }) => {
         <div className="absolute inset-0 bg-black/40"></div>
       </div>
 
-      <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 w-full flex-grow mt-6 md:mt-12">
+      <div className="relative z-10 flex flex-col items-center justify-center text-center px-6 w-full flex-grow mt-4 md:mt-12 min-h-0">
         <p className="uppercase text-[10px] md:text-[11px] font-light text-ivory tracking-[0.3em] mb-8 md:mb-12 opacity-70 hero-elem anim-hero-label">
           The Wedding Of
         </p>
@@ -99,7 +100,7 @@ const Hero = ({ guestName, onOpenInvitation }) => {
           </span>
 
           {/* Benjamin */}
-          <span className="font-script text-[clamp(60px,10vw,150px)] md:text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name1">
+          <span className="font-script text-[clamp(48px,10vw,150px)] md:text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name1">
             {groomName}
           </span>
 
@@ -117,7 +118,7 @@ const Hero = ({ guestName, onOpenInvitation }) => {
           </svg>
 
           {/* Angelin */}
-          <span className="font-script text-[clamp(60px,10vw,150px)] md:text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name2">
+          <span className="font-script text-[clamp(48px,10vw,150px)] md:text-[clamp(72px,11vw,150px)] font-normal text-ivory tracking-[0.01em] leading-none z-10 hero-elem anim-hero-name2">
             {brideName}
           </span>
         </div>
@@ -127,12 +128,12 @@ const Hero = ({ guestName, onOpenInvitation }) => {
         </p>
       </div>
 
-      <div className="flex flex-col w-full z-10 pt-8 md:pt-16 px-6 relative items-center">
+      <div className="flex flex-col w-full z-10 pt-4 md:pt-16 px-6 pb-8 md:pb-0 relative items-center">
         <div className="hero-elem anim-hero-guest flex flex-col items-center">
           <p className="text-offwhite/80 text-xs md:text-sm mb-1 md:mb-2 font-light italic font-serif">
             Dear,
           </p>
-          <p className="text-xl md:text-2xl font-serif tracking-tight mb-6 md:mb-10 font-normal text-white capitalize">
+          <p className="text-lg md:text-2xl font-serif tracking-tight mb-4 md:mb-10 font-normal text-white capitalize">
             {guestName || "Guest Name"}
           </p>
         </div>
@@ -150,6 +151,14 @@ const Hero = ({ guestName, onOpenInvitation }) => {
             style={{ strokeWidth: 1.5 }}
           />
         </button>
+
+        {/* Tap anywhere hint — mobile only */}
+        <p
+          className="md:hidden text-[9px] text-offwhite/30 tracking-[0.2em] uppercase mt-4 font-light hero-elem anim-hero-btn"
+          style={{ animationDelay: "2500ms" }}
+        >
+          atau tap di mana saja
+        </p>
       </div>
 
       {/* Scroll Chevron */}
